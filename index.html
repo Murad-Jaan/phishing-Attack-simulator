@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>Phishing Attack Simulator</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fa;--card:#fff;--tx:#1b2433;--mu:#5d6b82;--bd:#dde3ee;--pr:#2457d6;--ok:#1a8a4a;--bad:#d23b3b;--warn:#c98a00}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1521;--card:#18212f;--tx:#e8edf6;--mu:#98a6bd;--bd:#2a3649;--pr:#6e93ff;--ok:#3ec06f;--bad:#ff6b6b;--warn:#f0b429}}
+:root[data-theme=dark]{--bg:#0f1521;--card:#18212f;--tx:#e8edf6;--mu:#98a6bd;--bd:#2a3649;--pr:#6e93ff;--ok:#3ec06f;--bad:#ff6b6b;--warn:#f0b429}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+h1{font-size:17px;margin:0;flex:1;min-width:180px}nav{display:flex;gap:6px}
+button,select,input{font:inherit;color:inherit}
+button{border:1px solid var(--bd);background:var(--card);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--pr)}button.on,button.pri{background:var(--pr);border-color:var(--pr);color:#fff}
+button.bad{background:var(--bad);border-color:var(--bad);color:#fff}button.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;animation:fi .3s}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.kpi b{display:block;font-size:26px}.kpi span,.mu{color:var(--mu);font-size:13px}
+h2{font-size:16px;margin:18px 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar{height:12px;background:var(--bd);border-radius:6px;overflow:hidden;flex:1;min-width:80px}.bar i{display:block;height:100%;transition:width .8s}
+.tbl{width:100%;border-collapse:collapse}.tbl td,.tbl th{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
+.tag{padding:2px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.mail{padding:10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.mail:hover{border-color:var(--pr)}.dot{width:10px;height:10px;border-radius:50%;background:var(--pr);flex:none}
+.body{white-space:pre-line;background:var(--bg);padding:12px;border-radius:8px;margin:10px 0}
+.warn{border-left:4px solid var(--warn);padding:8px 12px;background:var(--bg);border-radius:6px;margin:8px 0}
+.res{border-left:4px solid var(--ok)}.res.no{border-color:var(--bad)}
+a.l{color:var(--pr);text-decoration:underline;cursor:pointer}
+.donut{width:120px;height:120px;border-radius:50%;flex:none;display:grid;place-items:center}
+.donut div{width:78px;height:78px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-weight:700}
+.fake{border:2px dashed var(--bad);padding:12px;border-radius:10px;margin:8px 0}
+input,select{padding:7px 9px;border:1px solid var(--bd);background:var(--card);border-radius:8px}
+.scroll{overflow-x:auto}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
+.stp{flex:1;min-width:130px;border:1px solid var(--bd);border-radius:10px;padding:10px;background:var(--card);opacity:.3;animation:lit 10s infinite}
+.stp b{display:block}.stp .df{margin-top:6px;font-size:12px;color:var(--ok)}
+@keyframes lit{0%,100%{opacity:.3;transform:none}4%,16%{opacity:1;transform:translateY(-3px);border-color:var(--bad)}22%{opacity:.6;transform:none}}
+@media(prefers-reduced-motion:reduce){.stp{animation:none;opacity:1}}
+</style></head><body>
+<header><h1>🛡️ Phishing Attack Simulator <span class="mu">· training only</span></h1>
+<nav><button id="t-it" onclick="go('it')">IT Dashboard</button><button id="t-emp" onclick="go('emp')">Employee</button><button id="t-dp" onclick="go('dp')">Detect &amp; Prevent</button><button id="t-tips" onclick="go('tips')">Tips</button></nav></header>
+<main id="app"></main>
+<script>
+const EMP=[["Ali","IT"],["Zain","IT"],["Sara","HR"],["Maria","HR"],["Bilal","Finance"],["Hina","Finance"],["Usman","Sales"],["Ayesha","Sales"]];
+const DEPTS=["IT","HR","Finance","Sales"];
+const SC=[
+{d:"easy",p:1,from:"security@paypa1-support.com",sub:"URGENT: Your account will be suspended!",body:"Dear Customer,\nWe detected unusual activity. Verify your account within 24 hours or it will be permanently closed.",link:"http://paypa1-verify.com/login",ind:["Misspelled domain (paypa1 uses the number 1)","Urgent, threatening tone","Generic greeting ('Dear Customer')"]},
+{d:"easy",p:0,from:"hr@company.com",sub:"Team lunch this Friday",body:"Hi team,\nWe are having a team lunch on Friday at 1 PM in the cafeteria. Let HR know about any dietary needs.\nThanks, HR",ind:["Known internal sender domain","No links, no pressure, normal request"]},
+{d:"medium",p:1,from:"accounts@vendor-billing.co",sub:"Invoice #8841 attached",body:"Hello,\nPlease find the overdue invoice attached and settle today to avoid penalties.",att:"Invoice_8841.pdf.exe",ind:["Double extension (.pdf.exe) is an executable","Unknown external vendor","Pressure to pay immediately"]},
+{d:"medium",p:0,from:"it@company.com",sub:"Scheduled maintenance on Sunday",body:"Hi all,\nThe mail server will be down Sunday 2-4 AM for maintenance. No action is needed from you.\nIT Department",ind:["Internal sender, no links or attachments","Informational only, asks for nothing"]},
+{d:"medium",p:1,from:"ceo.office@gmail.com",sub:"Quick favor — keep confidential",body:"Are you available? I need you to buy 5 gift cards for a client and send me the codes. I'm in a meeting so can't call.",ind:["CEO using a free Gmail address","Unusual request for gift cards","Avoids phone verification, secrecy"]},
+{d:"hard",p:1,from:"noreply@company-docs.net",sub:"Shared with you: Q3 Salary Review",body:"A colleague shared a document with you. Click to open and sign in to view.",link:"https://company-docs.net/view/q3",ind:["Lookalike external domain, not company.com","Unexpected document using curiosity as bait","Link asks you to sign in again"]},
+{d:"hard",p:0,from:"it@company.com",sub:"Password expires in 7 days",body:"Your password expires in 7 days. You can change it anytime from the company SSO portal.",link:"https://sso.company.com/reset",ind:["Exact internal domain and real SSO address","No threat, gentle deadline","Safest habit: open the portal yourself, not via email"]},
+{d:"hard",p:1,from:"delivery@dhl-tracking-pk.com",sub:"Package delivery failed — reschedule",body:"We could not deliver your parcel. Pay a small fee of Rs. 150 to reschedule.",link:"http://dhl-tracking-pk.com/pay",ind:["Not an official DHL domain","You did not order anything","Asks for a payment through a link"]}];
+let S={camps:[],res:{}},view="it",me=0,openK=null,fake=false,lastDone=false;
+try{const x=JSON.parse(localStorage.getItem("psim")||"null");if(x)S=x}catch(e){}
+const save=()=>{try{localStorage.setItem("psim",JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const K=(c,s,e)=>c+"|"+s+"|"+e;
+const inbox=e=>{const o=[];S.camps.forEach(c=>{if(c.emps.includes(e))c.scs.forEach(s=>o.push({c,s,k:K(c.id,s,e)}))});return o};
+const ok=(s,a)=>SC[s].p?a!=="legit":a==="legit";
+function score(e){let n=0,g=0,pc=0;for(const k in S.res){const[c,s,x]=k.split("|");if(+x!==e)continue;const r=S.res[k];if(r.a){n++;if(ok(+s,r.a))g++}if(r.click&&SC[+s].p)pc++}
+return n?Math.max(0,Math.round(g/n*100)-10*pc):null}
+function stats(){let sent=0,clicks=0,rep=0,good=0,bad=0;S.camps.forEach(c=>sent+=c.emps.length*c.scs.length);
+for(const k in S.res){const r=S.res[k],s=+k.split("|")[1];if(r.click)clicks++;if(r.a==="report")rep++;if(r.a){ok(s,r.a)?good++:bad++}}return{sent,clicks,rep,good,bad}}
+function go(v){view=v;openK=null;fake=false;render()}
+function newCamp(){const n=document.getElementById("cn").value.trim()||"Campaign "+(S.camps.length+1);
+const dp=document.getElementById("cd").value,df=document.getElementById("cf").value;
+const emps=EMP.map((e,i)=>i).filter(i=>dp==="All"||EMP[i][1]===dp);
+const scs=SC.map((s,i)=>i).filter(i=>df==="mixed"||SC[i].d===df);
+S.camps.push({id:S.camps.length+1,name:n,dept:dp,diff:df,emps,scs,date:new Date().toLocaleDateString()});save();render()}
+function simulate(){const c=S.camps[S.camps.length-1];if(!c)return;
+c.emps.forEach(e=>c.scs.forEach(s=>{const k=K(c.id,s,e);if(S.res[k]&&S.res[k].a)return;const skill=.45+Math.random()*.5;
+const r={click:SC[s].p&&Math.random()>skill&&!!(SC[s].link||SC[s].att)};r.a=Math.random()<skill?(SC[s].p?(Math.random()<.5?"report":"phish"):"legit"):(SC[s].p?"legit":"phish");S.res[k]=r}));save();render()}
+function exportCsv(){const rows=[['campaign','employee','department','email_subject','is_phishing','link_clicked','answer','correct']];
+for(const k in S.res){const[c,s,e]=k.split('|'),r=S.res[k],cp=S.camps.find(x=>x.id==c);rows.push([cp?cp.name:c,EMP[+e][0],EMP[+e][1],SC[+s].sub,SC[+s].p?'yes':'no',r.click?'yes':'no',r.a||'',r.a?(ok(+s,r.a)?'yes':'no'):''])}
+const q=v=>{v=String(v);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+const blob=new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}),a=document.createElement('a');
+a.href=URL.createObjectURL(blob);a.download='phishing-campaign-results.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function reset(){if(confirm("Delete all demo data?")){S={camps:[],res:{}};save();render()}}
+function pick(k){openK=k;fake=false;lastDone=false;render()}
+function clickLink(k){const r=S.res[k]=S.res[k]||{};r.click=true;fake=true;save();render()}
+function answer(k,a){const r=S.res[k]=S.res[k]||{};r.a=a;fake=false;save();render()}
+const bar=(v,col)=>`<div class="bar"><i style="width:${v||0}%;background:${col}"></i></div>`;
+const colr=v=>v==null?"var(--mu)":v>=70?"var(--ok)":v>=40?"var(--warn)":"var(--bad)";
+function it(){const st=stats(),tot=st.good+st.bad,ang=tot?st.good/tot*360:0;
+const sc=EMP.map((e,i)=>score(i));
+const dsc=DEPTS.map(d=>{const a=EMP.map((e,i)=>e[1]===d?sc[i]:null).filter(x=>x!=null);return[d,a.length?Math.round(a.reduce((x,y)=>x+y)/a.length):null]});
+const weak=EMP.map((e,i)=>[e[0],e[1],sc[i]]).filter(x=>x[2]!=null&&x[2]<60);
+return`<div class="grid">
+<div class="card kpi"><b>${S.camps.length}</b><span>Campaigns</span></div>
+<div class="card kpi"><b>${st.sent}</b><span>Simulated emails sent</span></div>
+<div class="card kpi"><b>${st.clicks}</b><span>Links clicked</span></div>
+<div class="card kpi"><b>${st.rep}</b><span>Phishing reported</span></div>
+<div class="card kpi"><b>${st.good}/${st.bad}</b><span>Correct / incorrect</span></div></div>
+<h2>Create campaign</h2><div class="card row">
+<input id="cn" placeholder="Campaign name">
+<select id="cd"><option>All</option>${DEPTS.map(d=>`<option>${d}</option>`).join("")}</select>
+<select id="cf"><option value="mixed">Mixed difficulty</option><option>easy</option><option>medium</option><option>hard</option></select>
+<button class="pri" onclick="newCamp()">Run simulation</button>
+<button onclick="simulate()" title="Auto-generate random employee responses for the latest campaign">Auto-simulate responses</button>
+<button onclick="exportCsv()">Export CSV</button><button onclick="reset()">Reset</button></div>
+<div class="grid" style="margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+<div class="card"><h2 style="margin-top:0">Response accuracy</h2><div class="row">
+<div class="donut" style="background:${tot?`conic-gradient(var(--ok) ${ang}deg,var(--bad) 0)`:"var(--bd)"}"><div>${tot?Math.round(st.good/tot*100)+"%":"–"}</div></div>
+<span class="mu">Green = correct, red = incorrect responses</span></div></div>
+<div class="card"><h2 style="margin-top:0">Department awareness</h2>
+${dsc.map(([d,v])=>`<div class="row" style="margin:6px 0"><span style="width:60px">${d}</span>${bar(v,colr(v))}<b style="width:36px">${v==null?"–":v}</b></div>`).join("")}</div></div>
+<h2>Employee awareness scores</h2><div class="card scroll"><table class="tbl"><tr><th>Employee</th><th>Dept</th><th style="width:40%">Score</th></tr>
+${EMP.map((e,i)=>`<tr><td>${e[0]}</td><td>${e[1]}</td><td><div class="row">${bar(sc[i],colr(sc[i]))}<b>${sc[i]==null?"–":sc[i]}</b></div></td></tr>`).join("")}</table></div>
+${dpPanel()}<h2>Needs extra training</h2><div class="card">${weak.length?weak.map(w=>`<span class="tag" style="border-color:var(--bad)">⚠ ${w[0]} (${w[1]}) – ${w[2]}</span> `).join(""):'<span class="mu">No one below 60 yet.</span>'}</div>
+<h2>Campaign history</h2><div class="card scroll"><table class="tbl"><tr><th>#</th><th>Name</th><th>Target</th><th>Level</th><th>Date</th></tr>
+${S.camps.slice().reverse().map(c=>`<tr><td>${c.id}</td><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td>${esc(c.diff)}</td><td>${esc(c.date)}</td></tr>`).join("")||'<tr><td colspan=5 class="mu">No campaigns yet.</td></tr>'}</table></div>`}
+function emp(){const box=inbox(me);
+let h=`<div class="row"><b>Logged in as:</b><select onchange="me=+this.value;openK=null;render()">${EMP.map((e,i)=>`<option value="${i}"${i===me?" selected":""}>${e[0]} (${e[1]})</option>`).join("")}</select><span class="mu">Your awareness score: <b>${score(me)==null?"–":score(me)}</b></span></div><h2>Inbox</h2>`;
+if(openK){const it=box.find(x=>x.k===openK);if(it){const s=SC[it.s],r=S.res[it.k]||{};
+h+=`<div class="card"><button onclick="openK=null;render()">← Back</button>
+<h3 style="margin:10px 0 2px">${esc(s.sub)}</h3><div class="mu">From: ${esc(s.from)}</div>
+<div class="body">${esc(s.body)}</div>
+${(scanOn[it.k]||r.a)?`<div class="warn"><b>🔍 Detector report</b>${scan(s.from.toLowerCase(),(s.link||"").toLowerCase(),(s.sub+" "+s.body+" "+(s.att||"")).toLowerCase())}</div>`:`<button onclick="scanOn['${it.k}']=1;render()">🔍 Scan with detector</button>`}
+${s.link?`<p>🔗 <a class="l" title="${esc(s.link)}" onclick="clickLink('${it.k}')">${s.p?"Click here to continue":"Open the portal"}</a> <span class="mu">(hover to see real address)</span></p>`:""}
+${s.att?`<p>📎 <a class="l" onclick="clickLink('${it.k}')">${s.att}</a></p>`:""}
+${fake?`<div class="fake"><b>🚨 Simulated fake login page</b><p class="mu">In a real attack, typing here would send your password to criminals. Here nothing is collected.</p><input disabled placeholder="Email"> <input disabled placeholder="Password" type="password"></div>`:""}
+${r.a?`<div class="warn res ${ok(it.s,r.a)?"":"no"}"><b>${ok(it.s,r.a)?"✅ Correct!":"❌ Not quite."}</b> This email was <b>${s.p?"PHISHING":"LEGITIMATE"}</b>.<br>Why:<ul>${s.ind.map(i=>`<li>${i}</li>`).join("")}</ul>${ptip(s,r)}</div>`
+:`<div class="row"><button class="bad" onclick="answer('${it.k}','phish')">🎣 Phishing</button><button class="ok" onclick="answer('${it.k}','legit')">✔ Legitimate</button><button onclick="answer('${it.k}','report')">🚩 Report suspicious</button></div>`}</div>`;return h}}
+h+=box.length?box.map(x=>{const s=SC[x.s],r=S.res[x.k]||{};return`<div class="mail" onclick="pick('${x.k}')"><span class="dot" style="${r.a?"visibility:hidden":""}"></span><div style="flex:1;min-width:0"><b>${esc(s.sub)}</b><div class="mu">${esc(s.from)} · ${s.d}</div></div>${r.a?`<span class="tag">${ok(x.s,r.a)?"✅":"❌"}</span>`:""}</div>`}).join(""):'<div class="card mu">Inbox empty. Ask IT to run a campaign that includes you.</div>';
+return h}
+function attack(){const A=[['📧','Fake email arrives','Spoofed sender, urgent text','Mail filter, SPF/DKIM/DMARC'],['👀','Employee opens it','Looks like a real message','Spot the red flags'],['🖱️','Clicks the link','Goes to a lookalike site','Hover first, do not click'],['🪪','Fake login page','Asks for a password','Never type it, report it'],['💥','Account taken over','Attacker logs in','MFA limits the damage']];
+return`<h2>Phishing attack visualization</h2><div class="card"><div class="flow">${A.map((a,i)=>`<div class="stp" style="animation-delay:${i*1.5}s"><span style="font-size:24px">${a[0]}</span><b>${i+1}. ${a[1]}</b><span class="mu">${a[2]}</span><div class="df">🛡️ ${a[3]}</div></div>`).join('')}</div><p class="mu" style="margin-bottom:0">Red shows where the attack is. Green is the defence that can stop it at that step.</p></div>`}
+function tips(){const T=["Check the sender's real domain, not only the display name.","Hover over links before clicking. Does the address match the company?","Be suspicious of urgency, threats, and prizes.","Never open unexpected attachments, especially .exe, .zip, or double extensions.","Verify money or gift-card requests by phone or in person.","Go to websites by typing the address yourself, not via email links.","When unsure, use the Report button. Reporting is never wrong."];
+return`${attack()}<h2>Cybersecurity tips</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">${T.map((t,i)=>`<div class="card"><b>${i+1}.</b> ${t}</div>`).join("")}</div>
+<p class="warn">This tool uses simulated content only. It never collects real passwords or sends real emails.</p>`}
+const PREV=[["🔧 Technical controls",["Email filtering / spam gateway","SPF, DKIM and DMARC on the company domain","Multi-factor authentication (MFA) on all accounts","Block risky attachments (.exe, .js, macros)","Keep browsers and systems patched"]],["🧠 People and training",["Regular phishing simulations (this tool)","Immediate feedback after every mistake","One-click Report button for suspicious mail","Reward reporting, never punish mistakes"]],["📋 Process and response",["Verify payment or password requests by phone","Incident plan: report, isolate, reset passwords","Review campaign results and retrain weak areas"]]];
+const CHK=["I check the sender's real address","I hover over links before clicking","I never open unexpected attachments","I use MFA on my accounts","I verify money requests by phone","I report suspicious emails"];
+let DC=CHK.map(()=>0);
+function chk(i,el){DC[i]=el.checked?1:0;const n=DC.reduce((a,b)=>a+b);document.getElementById("c-bar").style.width=Math.round(n/CHK.length*100)+"%";document.getElementById("c-n").textContent=n+"/"+CHK.length}
+function sample(){document.getElementById("a-from").value="security@paypa1-support.com";document.getElementById("a-link").value="http://paypa1-verify.com/login";document.getElementById("a-txt").value="Dear Customer, urgent: verify your password within 24 hours or your account will be suspended."}
+let scanOn={};
+function ptip(s,r){const w=!ok(SC.indexOf(s),r.a);if(!w&&!r.click)return'';
+return`<p>🛡️ <b>Prevention tip:</b> ${!s.p?'Not every email is phishing. Check the sender domain and whether it asks for anything risky before reporting.':s.att?'Never open unexpected attachments. Report them to IT and let the mail filter handle them.':s.link?'Do not click the link. Type the website address yourself, and keep MFA on so a stolen password alone is not enough.':'Verify money or secret requests by phone using a known number.'}</p>`}
+function dpPanel(){let ph=0,det=0,rep=0,clk=0,fp=0;
+for(const k in S.res){const r=S.res[k],s=+k.split('|')[1];if(SC[s].p){if(r.a){ph++;if(r.a!=='legit')det++;if(r.a==='report')rep++}if(r.click)clk++}else if(r.a){if(r.a!=='legit')fp++}}
+const pc=(a,b)=>b?Math.min(100,Math.round(a/b*100)):null,dr=pc(det,ph),cr=pc(clk,ph),rr=pc(rep,ph),R=[];
+if(dr==null)R.push('Run a campaign and collect responses to get recommendations.');
+else{if(dr<70)R.push('Low detection rate: schedule extra phishing-awareness training for the weakest departments.');
+if(cr>20)R.push('High click rate: enforce MFA and block risky links and attachments at the email gateway.');
+if(rr<30)R.push('Low reporting rate: promote the Report button and reward employees who report.');
+if(fp>0)R.push('Some safe emails were flagged: teach employees to verify sender domains (SPF, DKIM and DMARC help).');
+if(!R.length)R.push('Good results. Keep running monthly simulations at a higher difficulty.')}
+const v=x=>x==null?'–':x+'%';
+return`<h2>🔍 Detection and 🛡️ Prevention</h2><div class="grid"><div class="card kpi"><b>${v(dr)}</b><span>Detection rate (phishing caught)</span></div><div class="card kpi"><b>${v(cr)}</b><span>Click rate on phishing</span></div><div class="card kpi"><b>${v(rr)}</b><span>Reporting rate</span></div><div class="card kpi"><b>${fp}</b><span>False alarms (safe flagged)</span></div></div><div class="card" style="margin-top:12px"><b>Recommended prevention actions</b><ul>${R.map(x=>`<li>${x}</li>`).join('')}</ul></div>`}
+function scan(f,l,t){
+const dom=f.split("@")[1]||"";
+const F=[];let p=0;const add=(n,m)=>{p+=n;F.push(m)};
+if(dom&&ORG&&dom!==ORG)add(15,"Sender is outside your organisation domain ("+esc(ORG)+")");
+if(/(gmail|yahoo|hotmail|outlook)\.com$/.test(dom))add(15,"Free webmail address used for an official request");
+if(dom&&/\d/.test(dom.replace(/\.[a-z.]+$/,"")))add(25,"Digit inside the domain name (e.g. paypa1)");
+if(/(verify|support|secure|billing|tracking|docs|login)/.test(dom))add(10,"Domain contains common bait words");
+if(l){
+if(l.startsWith("http://"))add(15,"Link is not encrypted (http, not https)");
+if(/\/\/\d+\.\d+\.\d+\.\d+/.test(l))add(25,"Link uses a raw IP address");
+if(/bit\.ly|tinyurl|t\.co|goo\.gl/.test(l))add(15,"Shortened link hides the real destination");
+if(l.includes("@"))add(20,"Link contains @, which can hide the real host");
+const lh=(l.split("//")[1]||l).split("/")[0];
+if(dom&&!lh.endsWith(dom)&&!dom.endsWith(lh))add(10,"Link domain does not match the sender domain");}
+if(/urgent|immediately|within 24|in 24 hours|suspend|expires? (today|now|tonight)|final notice|act now|permanently/.test(t))add(20,"Urgent or threatening language");
+if(/password|verify your account|sign in|log in|login|otp|ssn|pin\b/.test(t))add(20,"Asks for credentials or personal data");
+if(/gift card|wire transfer|payment|invoice|fee\b/.test(t))add(15,"Requests money or payment");
+if(/dear (customer|user|sir|member)/.test(t))add(10,"Generic greeting instead of your name");
+if(/\.(exe|js|scr|bat|zip)\b/.test(t))add(25,"Risky attachment type mentioned");
+if(/confidential|don't tell|keep this private|secret/.test(t))add(10,"Secrecy pressure");
+p=Math.min(100,p);lastP=p;const lv=p<30?["Low risk","var(--ok)"]:p<60?["Medium risk","var(--warn)"]:["High risk: likely phishing","var(--bad)"];
+return`<div class="row"><b style="color:${lv[1]}">${lv[0]}</b>${bar(p,lv[1])}<b>${p}/100</b></div>`+(F.length?`<ul>${F.map(x=>`<li>${x}</li>`).join("")}</ul>`:'<p class="mu">No red flags found by these rules. Stay careful anyway.</p>')}
+function analyze(){const g=i=>document.getElementById(i).value.trim().toLowerCase();document.getElementById("a-out").innerHTML=scan(g("a-from"),g("a-link"),g("a-txt"))}
+let ORG='company.com',lastP=0;
+function qp(s){return s.replace(/=\r?\n/g,'').replace(/=([0-9A-F]{2})/gi,(m,h)=>String.fromCharCode(parseInt(h,16)))}
+function eml(file){if(!file)return;if(file.size>5e6){document.getElementById('e-out').textContent='File too large (max 5 MB).';return}const rd=new FileReader();rd.onload=()=>emlText(String(rd.result));rd.readAsText(file)}
+function emlText(raw){raw=String(raw).slice(0,2e6);const i=raw.search(/\r?\n\r?\n/),H={};
+(i<0?raw:raw.slice(0,i)).replace(/\r?\n[ \t]+/g,' ').split(/\r?\n/).forEach(l=>{const j=l.indexOf(':');if(j>0){const k=l.slice(0,j).toLowerCase();H[k]=(H[k]?H[k]+' ':'')+l.slice(j+1).trim()}});
+let body=i<0?'':raw.slice(i);if(/quoted-printable/i.test(raw))body=qp(body);
+const addr=s=>((s||'').match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i)||[''])[0].toLowerCase(),dm=a=>a.split('@')[1]||'';
+const from=addr(H.from),rep=addr(H['reply-to']),rp=addr(H['return-path']);
+const hs=[];let hp=0;const add=(n,m)=>{hp+=n;hs.push(m)};
+const au=(H['authentication-results']||'').toLowerCase(),sp=(H['received-spf']||'').toLowerCase();
+if(!au&&!sp)add(10,'No SPF/DKIM/DMARC results in the headers (sender cannot be confirmed)');
+else{if(/spf=(fail|softfail|none)/.test(au)||/^(fail|softfail|none)/.test(sp))add(20,'SPF check failed: the sending server is not authorised for this domain');
+if(/dkim=(fail|none)/.test(au))add(20,'DKIM check failed or missing: the message may be forged or altered');
+if(/dmarc=(fail|none)/.test(au))add(25,'DMARC check failed: the domain owner does not vouch for this email')}
+if(rep&&dm(rep)!==dm(from))add(20,'Reply-To domain ('+dm(rep)+') differs from the sender domain ('+dm(from)+')');
+if(rp&&dm(rp)!==dm(from))add(10,'Return-Path domain ('+dm(rp)+') differs from the sender domain');
+const L=[],re=/<a\s[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;let m;
+while((m=re.exec(body)))L.push([m[1],m[2].replace(/<[^>]*>/g,'').trim()]);
+(body.match(/https?:\/\/[^\s"'<>)]+/gi)||[]).forEach(u=>{if(!L.some(x=>x[0]===u))L.push([u,''])});
+const host=u=>{try{return new URL(u).hostname.toLowerCase()}catch(e){return ''}};
+L.forEach(([u,t])=>{const tm=t.match(/(?:https?:\/\/)?([a-z0-9.-]+\.[a-z]{2,})/i),h=host(u);if(tm&&h&&!h.endsWith(tm[1].toLowerCase())&&!tm[1].toLowerCase().endsWith(h))add(25,'Link text shows '+tm[1]+' but goes to '+h)});
+const att=(raw.match(/filename\*?=["']?[^"';\r\n]+/gi)||[]).map(x=>x.replace(/filename\*?=["']?/i,'').trim());
+att.forEach(a=>{if(/\.(exe|js|scr|bat|vbs|iso|docm|xlsm|zip)$/i.test(a))add(25,'Risky attachment: '+a)});
+const txt=(body.replace(/<[^>]*>/g,' ')).slice(0,4000),old=ORG;ORG=document.getElementById('e-org').value.trim().toLowerCase();
+const content=scan(from,(L[0]||[''])[0].toLowerCase(),((H.subject||'')+' '+txt+' '+att.join(' ')).toLowerCase());ORG=old;
+const tot=Math.min(100,hp+lastP),hi=tot>=60,md=tot>=30&&!hi;
+const lv=hi?['High risk: likely phishing','var(--bad)']:md?['Medium risk','var(--warn)']:['Low risk','var(--ok)'];
+const act=hi?['Do not click links, open attachments or reply.','Report it as phishing (Gmail: ⋮ → Report phishing) or send it to your IT team, then delete it.','If you already clicked or typed a password: change that password now, turn on MFA, and check your mail forwarding rules.','Block the sender address.']:md?['Do not act on it yet. Contact the sender through a known phone number or official website.','Check the link destinations below before clicking.','Report it if you are still unsure.']:['No strong red flags found. Still hover over links and keep MFA on.'];
+document.getElementById('e-out').innerHTML=`<div class="row"><b style="color:${lv[1]}">${lv[0]}</b>${bar(tot,lv[1])}<b>${tot}/100</b></div><p class="mu">From: ${esc(from||'?')} · Subject: ${esc(H.subject||'(none)')}</p><b>Header checks</b>${hs.length?`<ul>${hs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="mu">Authentication and sender headers look consistent.</p>'}<b>Content checks</b><div>${content}</div><b>Link destinations</b>${L.length?`<ul>${L.slice(0,10).map(([u,t])=>`<li>${esc(host(u)||u)}${t?' <span class="mu">(text: '+esc(t.slice(0,40))+')</span>':''}</li>`).join('')}</ul>`:'<p class="mu">No links found.</p>'}<div class="warn"><b>🛡️ What to do</b><ul>${act.map(x=>`<li>${x}</li>`).join('')}</ul></div>`}
+function dp(){
+const n=DC.reduce((a,b)=>a+b);
+return`<h2>🔍 Detection: email risk analyzer</h2><div class="card"><p class="mu" style="margin-top:0">Paste details of a suspicious email. The analyzer checks it against common phishing rules and gives a risk score. Nothing is sent anywhere.</p>
+<div class="row" style="margin-bottom:8px"><input id="a-from" placeholder="Sender (name@domain.com)" style="flex:1;min-width:180px"><input id="a-link" placeholder="Link in the email (optional)" style="flex:1;min-width:180px"></div>
+<textarea id="a-txt" rows="4" placeholder="Paste subject and message text, or attachment name" style="width:100%;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit"></textarea>
+<div class="row" style="margin-top:8px"><button class="pri" onclick="analyze()">Analyze</button><button onclick="sample()">Load sample</button></div><div id="a-out" style="margin-top:10px"></div></div>
+<h2>📬 Connect Gmail</h2><div class="card"><div class="row"><b>Status:</b><span class="tag" id="g-st">No message scanned yet</span></div>
+<p><b>Option A: paste from Gmail (works now, private)</b></p><ol class="mu"><li>Open the email in Gmail.</li><li>Click ⋮ → <b>Show original</b> → <b>Copy to clipboard</b>.</li><li>Paste it below and click Scan. The check runs only in your browser.</li></ol>
+<textarea id="g-raw" rows="5" placeholder="Paste the full original message from Gmail here" style="width:100%;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit"></textarea>
+<div class="row" style="margin-top:8px"><button class="pri" onclick="const v=document.getElementById('g-raw').value;if(v.trim()){emlText(v);document.getElementById('g-st').textContent='Gmail message scanned';document.getElementById('e-out').scrollIntoView({behavior:'smooth'})}else{document.getElementById('g-st').textContent='Paste a message first'}">Scan Gmail message</button><a class="l" href="https://mail.google.com/mail/u/0/#spam" target="_blank" rel="noopener">Open Gmail Spam ↗</a></div>
+<p style="margin-bottom:0"><b>Option B: live inbox scan (via Claude)</b></p><p class="mu" style="margin-top:4px">Connect Gmail to Claude in the chat, then ask Claude to scan your recent emails. Claude runs the same detection and prevention checks on your real inbox.</p></div>
+<h2>📧 Check a real email</h2><div class="card"><p class="mu" style="margin-top:0">Download an email from your inbox as an .eml file and upload it here. It is analysed only in your browser: nothing is uploaded or stored. Gmail: open the email, ⋮ → Download message. Outlook: File → Save As.</p><div class="row"><input id="e-org" placeholder="Your organisation domain (optional)" style="flex:1;min-width:200px"><input type="file" accept=".eml,.txt" onchange="eml(this.files[0])"></div><div id="e-out" style="margin-top:10px"></div></div>
+<h2>🛡️ Prevention: layered defence</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${PREV.map(p=>`<div class="card"><b>${p[0]}</b><ul>${p[1].map(x=>`<li>${x}</li>`).join("")}</ul></div>`).join("")}</div>
+<h2>✅ My safe-habits checklist</h2><div class="card">${CHK.map((c,i)=>`<label style="display:block;padding:3px 0"><input type="checkbox" ${DC[i]?"checked":""} onchange="chk(${i},this)"> ${c}</label>`).join("")}
+<div class="row" style="margin-top:8px">${"<div class=\"bar\"><i id=\"c-bar\" style=\"width:"+Math.round(n/CHK.length*100)+"%;background:var(--ok)\"></i></div>"}<b id="c-n">${n}/${CHK.length}</b></div></div>`}
+function render(){["it","emp","dp","tips"].forEach(v=>document.getElementById("t-"+v).className=v===view?"on":"");
+document.getElementById("app").innerHTML=view==="it"?it():view==="emp"?emp():view==="dp"?dp():tips()}
+render();
+</script></body></html>
