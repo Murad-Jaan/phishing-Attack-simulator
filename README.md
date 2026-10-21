@@ -64,14 +64,7 @@ Turn on two-factor authentication for your account.
 
 **Known limitations:** the CSP must allow inline scripts (single-file app); detection is rule-based and can miss new attacks or flag safe emails; the IT/Employee views are a demo without real login; the `.eml` parser does not handle every MIME format.
 
-## Roadmap
-- [ ] Usability test with 5 users and record results (HCI)
-- [ ] Custom scenario editor for IT admins
-- [ ] Awareness trend chart across campaigns
-- [ ] More scenarios (QR-code and SMS phishing)
-- [ ] Split JavaScript and CSS into separate files and tighten the CSP
-- [ ] Login and roles (IT admin / employee) with a backend and database
-- [ ] Real-time Gmail/Outlook detection (OAuth + backend + provider API)
+
 
 ## Changelog
 - **v1.0** Simulator, IT dashboard, detection, prevention, real-email checker, attack visualization, CSV export, tests, CI.
