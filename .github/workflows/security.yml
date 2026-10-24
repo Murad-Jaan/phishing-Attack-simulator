@@ -12,12 +12,12 @@ permissions:
 
 jobs:
   tests-and-security:
-    name: Unit tests and security checks
+    name: Legacy unit tests and security checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node scripts/test.js index.html
-      - run: bash scripts/security-check.sh index.html
+      - run: node legacy/scripts/test.js legacy/index.html
+      - run: bash legacy/scripts/security-check.sh legacy/index.html
 
   secret-scan:
     name: Secret scan (gitleaks)
