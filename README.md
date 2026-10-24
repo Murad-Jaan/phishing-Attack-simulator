@@ -1,70 +1,104 @@
 # Phishing Attack Simulator
 
-A web-based cybersecurity awareness project for IT/Security departments. It runs safe, simulated phishing campaigns, trains employees with instant feedback, and detects phishing in real emails you provide.
-University project combining **HCI**, **Computer Graphics** and **Cybersecurity**.
+An authorized, educational phishing simulation and real-mail detection platform. The project combines **HCI**, **Computer Graphics**, and **Cybersecurity**: safe campaigns measure behaviour, a layered analyzer explains real-email risk, and campaign findings feed back into detection and training.
 
-> **Educational use only.** Simulated content only. No real credentials are collected, no real emails are sent, and the page makes no network requests.
+> **Authorized and educational use only.** A signed authorization and rules of engagement are required before any campaign can launch. Simulations never capture real passwords, never send malware or real attachments, and never use filter-evasion techniques. Development uses Mailpit; SMTP relay is reserved for approved pilots on sandbox domains.
 
-## Features
-- **IT Dashboard:** create campaigns by department and difficulty; see emails sent, clicks, reports, correct/incorrect answers, detection, click and reporting rates; department and employee awareness scores (charts); employees who need training; campaign history; recommended prevention actions; **Export CSV**.
-- **Employee view:** email-style inbox, mark *Phishing / Legitimate / Report*, simulated link and attachment clicks, fake login page demo (disabled inputs), instant feedback with reasons, and prevention tips.
-- **Detection:** rule-based risk analyzer (sender, links, urgency, credentials, attachments) and a **real email checker** (SPF/DKIM/DMARC, Reply-To mismatch, deceptive links, risky attachments) for emails pasted from Gmail "Show original" or uploaded as `.eml`.
-- **Prevention:** layered-defence guide, safe-habits checklist, and a "What to do" list for each analysed email.
-- **Phishing attack visualization:** animated 5-step attack flow with the defence for each step (respects reduced-motion settings).
+## Current status
 
-## Run it
-No install or build step. Open `index.html` in a browser.
-To publish: GitHub **Settings > Pages > Deploy from branch > main**.
+**Phase 1 — planning and design.** No application code exists yet. The legacy single-file simulator is preserved unchanged in [`legacy/`](legacy/) as the behavioural and detection reference.
 
-## Project structure
+The authoritative scope is [`docs/PLAN.md`](docs/PLAN.md). UI and copy rules are in [`docs/design-system.md`](docs/design-system.md). Phase 1 outputs are indexed in [`docs/README.md`](docs/README.md).
+
+## Target stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js (React), Tailwind CSS, shadcn/ui, Figma-based design system |
+| Backend | Python FastAPI, PostgreSQL, SQLAlchemy, Alembic |
+| Async | Celery + Redis |
+| Mail | Mailpit for development and testing; SMTP relay only for authorized pilots |
+| Detection | dnspython, tldextract, python-Levenshtein, scikit-learn, Python `email`/mail parsing |
+| Dev/test | Docker Compose, pytest, Playwright, GitHub Actions |
+
+## Repository layout
+
 ```
-index.html                      the whole app (HTML + CSS + JavaScript)
-scripts/test.js                 unit tests (Node.js, no dependencies)
-scripts/security-check.sh       security checks
-.github/workflows/security.yml  CI: tests + security checks + CodeQL + gitleaks
-.gitignore                      blocks secrets and real .eml files
+frontend/     Next.js application (Phase 2+)
+backend/      FastAPI API, workers and database migrations (Phase 2+)
+ml/           Detection rules, features, models and evaluation (Phase 4)
+docs/         Plan, design system, Phase 1 analysis and decisions
+legacy/       Unchanged v1 single-file app, used as the reference implementation
+.github/      CI and legacy demo deployment workflows
+PROMPT.md     Project context, rules and phase backlog
+CHANGELOG.md  Phase-by-phase change log
 ```
+
+## Legacy reference app
+
+The v1 app remains runnable locally:
+
+```bash
+# from the repository root
+node legacy/scripts/test.js legacy/index.html
+bash legacy/scripts/security-check.sh legacy/index.html
+```
+
+Or open `legacy/index.html` directly in a browser. It has no build step and makes no network requests. See [`legacy/README.md`](legacy/README.md).
+
+The legacy GitHub Pages URL changes when the demo workflow is enabled. Until the repository owner switches Pages to **GitHub Actions**, the old root URL is expected to return 404 after the `index.html` move.
+
+## Documentation
+
+- [`PROMPT.md`](PROMPT.md) — shared project context, rules and phase backlog
+- [`docs/PLAN.md`](docs/PLAN.md) — authoritative plan: concept, safety, HCI, detection, architecture, metrics
+- [`docs/design-system.md`](docs/design-system.md) — authoritative design tokens, components, status language, copy rules
+- [`docs/legacy-migration-map.md`](docs/legacy-migration-map.md) — legacy inventory and migration decisions
+- [`docs/requirements.md`](docs/requirements.md) — roles, user stories and MoSCoW scope
+- [`docs/ethics-and-consent.md`](docs/ethics-and-consent.md) — authorization, consent, data handling and non-punitive reporting
+- [`docs/threat-model.md`](docs/threat-model.md) — assets, abuse cases, ATT&CK and kill chain
+- [`docs/architecture.md`](docs/architecture.md) — components, schema and API outline
+- [`docs/hci-and-wireframes.md`](docs/hci-and-wireframes.md) — personas, flows, heuristics and page wireframe specs
+- [`docs/assumptions.md`](docs/assumptions.md) — defaults and decisions needed
+- [`docs/evaluation-plan.md`](docs/evaluation-plan.md) — human, detector and SUS evaluation
+- [`docs/phase-2-checklist.md`](docs/phase-2-checklist.md) — next-phase entry criteria and tasks
+
+## Safety, security and privacy rules
+
+- Written authorization and rules of engagement before launch.
+- Record only that a simulated form was touched; never capture credentials.
+- Sandbox sending domains only (`example.com`, `*.test`, `*.invalid`); no real brand domains or logos.
+- Minimal data, configurable retention (default 90 days), and deletion support.
+- Audit log for privileged and campaign actions.
+- Group-level reporting by default; groups below five members are suppressed.
+- Non-punitive, blame-free language; no individual ranking or shaming.
+- No malware, real attachments, or filter-evasion, and no real `.eml` files committed.
+- All user and email content escaped; parameterized queries; hashed passwords; CSRF and rate limiting; secrets only in environment variables.
 
 ## Development workflow
-```bash
-node scripts/test.js index.html            # run unit tests
-bash scripts/security-check.sh index.html  # run security checks
 
-git checkout -b feature/my-change          # work on a branch
-# ...edit index.html...
-git add . && git commit -m "Describe the change"
-git push -u origin feature/my-change       # open a pull request; CI must pass, then merge
+Work in small steps on a branch. Phase 1 is documentation-only; do not add application code until Phase 2 is approved. Every phase must add tests, update this README and `CHANGELOG.md`, and end with a next-phase checklist.
+
+```bash
+git switch -c phase/<name> main
+# make changes
+node legacy/scripts/test.js legacy/index.html
+bash legacy/scripts/security-check.sh legacy/index.html
+git status
 ```
 
-### Rules for every change
-1. Any text from users or emails must go through `esc()` before it is put in `innerHTML`.
-2. No network calls, external scripts, `eval`, or enabled password fields (the security check enforces this).
-3. Never commit real emails (`.eml`), passwords, tokens or keys.
-4. Add or update a test in `scripts/test.js` when you change a detection rule or scoring.
+The repository owner handles commits and pushes. Do not commit or push on their behalf.
 
-### Where things are in `index.html`
-| Part | Function(s) |
-|---|---|
-| Sample data | `EMP` (employees), `SC` (simulated emails) |
-| Scoring and stats | `score()`, `stats()`, `ok()`, `dpPanel()` |
-| Detection | `scan()` (rules), `analyze()`, `emlText()` (real email parser) |
-| Screens | `it()` dashboard, `emp()` inbox, `dp()` detect and prevent, `tips()` + `attack()` |
-| Actions | `newCamp()`, `simulate()`, `answer()`, `exportCsv()` |
+## Roadmap
 
-## GitHub settings to turn on (once)
-**Settings > Code security:** Dependabot alerts, secret scanning with push protection, code scanning.
-**Settings > Branches:** protect `main` (require a pull request and passing checks).
-Turn on two-factor authentication for your account.
+1. **Phase 1 — Planning and design.** Requirements, ethics, threat model, architecture, HCI, wireframes and phase backlog.
+2. **Phase 2 — Core platform.** Auth and roles, groups and targets, templates, campaign creator, authorization gate, Mailpit delivery.
+3. **Phase 3 — Tracking, awareness and reports.** Event tracking, teachable-moment page, training/quiz, group-level reports, exports.
+4. **Phase 4 — Detection engine and mail analyzer.** Authentication checks, domain/URL/content/attachment analysis, explainability, model evaluation.
+5. **Phase 5 — Usability and evaluation.** SUS with 5–8 participants, accessibility audit, detector evaluation, fixes and final documentation.
 
-## Security design
-- Content-Security-Policy `default-src 'none'`: the page cannot send data anywhere.
-- Real emails are analysed only in your browser and are never stored.
-- CSV export neutralises spreadsheet formula injection.
-- Uploaded files are limited to 5 MB and pasted text to 2 MB.
-
-**Known limitations:** the CSP must allow inline scripts (single-file app); detection is rule-based and can miss new attacks or flag safe emails; the IT/Employee views are a demo without real login; the `.eml` parser does not handle every MIME format.
-
-
+See [`docs/phase-2-checklist.md`](docs/phase-2-checklist.md) and [`docs/evaluation-plan.md`](docs/evaluation-plan.md).
 
 ## Changelog
-- **v1.0** Simulator, IT dashboard, detection, prevention, real-email checker, attack visualization, CSV export, tests, CI.
+
+See [`CHANGELOG.md`](CHANGELOG.md).
