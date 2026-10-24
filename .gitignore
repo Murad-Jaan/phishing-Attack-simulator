@@ -49,3 +49,7 @@ test-results/
 *.swp
 *.swo
 *~
+
+# Frontend build artifacts
+*.tsbuildinfo
+next-env.d.ts
