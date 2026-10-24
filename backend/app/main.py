@@ -1,22 +1,25 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health
+from app.core.csp import build_csp
 import os
+import secrets
 
 app = FastAPI(title="Phishing Simulation API", version="0.1.0")
 
 # CSP middleware
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     env = os.getenv("ENV", "development")
     app_env = os.getenv("APP_ENV", "development")
     
     if env == "production" or app_env == "production":
-        nonce = getattr(request.state, "nonce", "testnonce")
-        csp = f"default-src 'self'; script-src 'nonce-{nonce}' 'strict-dynamic'; style-src 'self' 'nonce-{nonce}'; object-src 'none'; base-uri 'self';"
+        nonce = secrets.token_urlsafe(16)
+        request.state.nonce = nonce
+        csp = build_csp("production", nonce)
     else:
-        csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+        csp = build_csp("development")
     
     response.headers["Content-Security-Policy"] = csp
     response.headers["X-Content-Type-Options"] = "nosniff"

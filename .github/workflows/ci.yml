@@ -42,6 +42,7 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       - name: Lint
         run: |
           cd backend
@@ -49,7 +50,6 @@ jobs:
       - name: Type check
         run: |
           cd backend
-          pip install mypy
           mypy app
       - name: Run tests
         run: |
@@ -59,3 +59,29 @@ jobs:
         run: |
           cd backend
           DATABASE_URL=postgresql+psycopg://phish:phishpass@localhost:5432/phishsim alembic upgrade head
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+      - name: Lint
+        run: |
+          cd frontend
+          npm run lint
+      - name: Type check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+      - name: Playwright with axe
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+          npx playwright test

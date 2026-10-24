@@ -146,6 +146,22 @@ services:
       - dev
     restart: unless-stopped
 
+  web-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: phishsim-web:prod
+    container_name: phishsim-web-prod
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+    ports:
+      - "127.0.0.1:3000:3000"
+    command: ["sh", "-c", "npm run build && npm start"]
+    networks:
+      - dev
+
 volumes:
   pg_data:
   redis_data:
