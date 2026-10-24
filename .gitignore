@@ -27,3 +27,25 @@ Thumbs.db
 .idea/
 *.log
 *.zip
+
+# New stack additions
+node_modules/
+.next/
+out/
+build/
+dist/
+__pycache__/
+*.py[cod]
+*.so
+venv/
+env/
+ENV/
+coverage/
+.playwright/
+playwright-report/
+test-results/
+.pytest_cache/
+*.pid
+*.swp
+*.swo
+*~
