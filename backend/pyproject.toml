@@ -1,0 +1,7 @@
+[tool.mypy]
+explicit_package_bases = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "redis.*", "psycopg.*"]
+ignore_missing_imports = true

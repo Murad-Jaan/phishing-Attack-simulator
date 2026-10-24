@@ -1,0 +1,173 @@
+services:
+  postgres:
+    image: postgres:16.4
+    container_name: phishsim-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-phish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-phishpass}
+      POSTGRES_DB: ${POSTGRES_DB:-phishsim}
+    volumes:
+      - pg_data:/var/lib/postgresql/data:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-phish} -d ${POSTGRES_DB:-phishsim}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.1
+    container_name: phishsim-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data:Z
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.20.7
+    container_name: phishsim-mailpit
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "127.0.0.1:8025:8025"
+    volumes:
+      - mailpit_data:/data:Z
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: phishsim-api:dev
+    container_name: phishsim-api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://phish:phishpass@postgres:5432/phishsim}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:Z
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8000/health'); exit(0 if r.status<500 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: phishsim-worker:dev
+    container_name: phishsim-worker
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://phish:phishpass@postgres:5432/phishsim}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:Z
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.worker.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: phishsim-web:dev
+    container_name: phishsim-web
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://127.0.0.1:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app:Z
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "127.0.0.1:3000:3000"
+    command: ["npm", "run", "dev"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/',(r)=>{process.exit(r.statusCode<500?0:1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  web-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: phishsim-web:prod
+    container_name: phishsim-web-prod
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+    ports:
+      - "127.0.0.1:3000:3000"
+    command: ["sh", "-c", "npm run build && npm start"]
+    networks:
+      - dev
+
+volumes:
+  pg_data:
+  redis_data:
+  mailpit_data:
+
+networks:
+  dev:
+    driver: bridge
+    # Outbound access is allowed in development only

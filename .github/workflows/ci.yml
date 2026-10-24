@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_USER: phish
+          POSTGRES_PASSWORD: phishpass
+          POSTGRES_DB: phishsim
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.4.1
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: Lint
+        run: |
+          cd backend
+          ruff check .
+      - name: Type check
+        run: |
+          cd backend
+          mypy app
+      - name: Run tests
+        run: |
+          cd backend
+          pytest -v
+      - name: Migration check
+        run: |
+          cd backend
+          DATABASE_URL=postgresql+psycopg://phish:phishpass@localhost:5432/phishsim alembic upgrade head
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+      - name: Lint
+        run: |
+          cd frontend
+          npm run lint
+      - name: Type check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+      - name: Playwright with axe
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+          npx playwright test

@@ -102,3 +102,28 @@ See [`docs/phase-2-checklist.md`](docs/phase-2-checklist.md) and [`docs/evaluati
 ## Changelog
 
 See [`CHANGELOG.md`](CHANGELOG.md).
+
+## New Stack (Phase 2 M0)
+
+### Quick Start
+1. Copy environment file: `cp .env.example .env`
+2. Start all services: `make up` (or `docker compose up --build -d`)
+3. Access:
+   - Frontend: http://127.0.0.1:3000
+   - API: http://127.0.0.1:8000
+   - API Health: http://127.0.0.1:8000/health
+   - Mailpit UI: http://127.0.0.1:8025
+
+### Make Targets
+- `make up` - Start all services
+- `make down` - Stop and remove services  
+- `make test` - Run tests
+- `make lint` - Run linters
+- `make migrate` - Run database migrations
+- `make seed` - Run dev seed script (dev only)
+
+### Notes
+- All services bind to 127.0.0.1 only
+- Postgres, Redis, SMTP (1025) are on internal network only
+- Mailpit is the only mail destination
+- No secrets in repo - only .env.example with placeholders
