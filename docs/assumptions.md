@@ -21,3 +21,9 @@ All defaults below are the approved Phase 1 assumptions. Items marked **[needs d
 | Seed data | Dev-only demo seed script | Must be clearly labelled demo events, never run in production, and excluded from real reporting. | Approved |
 | URL fetching | Disabled in analyzer | No outbound requests from analyzer to submitted URLs. | Approved |
 | Attachments | Parse-only, never executed | No opening/execution of attachments. | Approved |
+
+## Known risks
+- Frontend runs on Next.js 14.2.35. npm audit reports advisories on the 14.x line
+  (including CSP-nonce XSS and DoS issues) and in postcss/tailwind and Playwright.
+  The app only listens on 127.0.0.1. Planned fix: upgrade to a supported Next.js
+  line as the first task of M1, before any deployment or demo outside this machine.
