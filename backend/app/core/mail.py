@@ -4,6 +4,12 @@ from email.mime.multipart import MIMEMultipart
 import os
 
 
+def _validate_header_value(value: str, field: str) -> None:
+    """Reject CR, LF or NUL to prevent SMTP/header command injection."""
+    if any(char in value for char in ("\r", "\n", "\x00")):
+        raise ValueError(f"{field} contains prohibited CR, LF or NUL characters")
+
+
 def is_sandbox_domain(domain: str) -> bool:
     """Check if domain is in sandbox allowlist"""
     allowed = os.getenv("ALLOWED_SEND_DOMAINS", "example.com,*.test,*.invalid")
@@ -29,6 +35,8 @@ def send_mail_sandbox(to_email: str, subject: str, body: str) -> bool:
     if smtp_host != "mailpit":
         raise ValueError("SMTP host must be Mailpit in sandbox mode")
     
+    _validate_header_value(to_email, "recipient")
+
     # Extract domain
     domain = to_email.split("@")[-1]
     if not is_sandbox_domain(domain):
@@ -36,7 +44,8 @@ def send_mail_sandbox(to_email: str, subject: str, body: str) -> bool:
     
     smtp_port = int(os.getenv("SMTP_PORT", "1025"))
     smtp_from = os.getenv("SMTP_FROM", "sandbox@example.test")
-    
+    _validate_header_value(smtp_from, "sender")
+
     msg = MIMEMultipart()
     msg['From'] = smtp_from
     msg['To'] = to_email

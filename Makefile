@@ -14,13 +14,12 @@ reset:
 
 test:
 	docker compose exec -T api pytest -v
-	docker run --rm --network phishing-attack-simulator_dev -v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.48.2-jammy sh -c "cd /app && npx playwright test --reporter=line"
+	docker run --rm --network phishing-attack-simulator_dev -v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.64.1-jammy sh -c "cd /app && npx playwright test --reporter=line"
 
 lint:
 	docker compose exec -T api ruff check .
 	docker compose exec -T api mypy app
-	cd frontend && npm run lint
-	cd frontend && npx tsc --noEmit
+	docker compose exec -T web sh -c "cd /app && npm run lint && npx tsc --noEmit"
 
 migrate:
 	docker compose exec -T -e PYTHONPATH=/app api alembic upgrade head
