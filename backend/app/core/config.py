@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     
     DATABASE_URL: str = "postgresql+psycopg://phish:phishpass@postgres:5432/phishsim"
     REDIS_URL: str = "redis://redis:6379/0"
+    TEST_DATABASE_URL: str = (
+        "postgresql+psycopg://phish:phishpass@postgres:5432/phishsim_test"
+    )
+    TEST_REDIS_URL: str = "redis://redis:6379/15"
     
     SMTP_HOST: str = "mailpit"
     SMTP_PORT: int = 1025
