@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   description: 'Phishing Simulation + Detection Platform',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const nonce = headers().get('x-nonce') || ''
+  const nonce = (await headers()).get('x-nonce') || ''
   
   return (
     <html lang="en">

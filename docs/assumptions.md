@@ -23,7 +23,17 @@ All defaults below are the approved Phase 1 assumptions. Items marked **[needs d
 | Attachments | Parse-only, never executed | No opening/execution of attachments. | Approved |
 
 ## Known risks
-- Frontend runs on Next.js 14.2.35. npm audit reports advisories on the 14.x line
-  (including CSP-nonce XSS and DoS issues) and in postcss/tailwind and Playwright.
-  The app only listens on 127.0.0.1. Planned fix: upgrade to a supported Next.js
-  line as the first task of M1, before any deployment or demo outside this machine.
+- Frontend is pinned to Next.js 15.5.28, React/ReactDOM 19.3.1, and
+  eslint-config-next 15.5.28. `npm audit --omit=dev` reports no Next.js
+  advisories; the remaining production advisories are the three moderate
+  `postcss-selector-parser` findings below.
+- Three moderate `npm audit --omit=dev` findings remain in Tailwind CSS 3.4.14's
+  `postcss-selector-parser@6.1.5` dependency (`GHSA-rj75-hqrm-r3gf`). They are
+  accepted for Step C because the only available fix is the Tailwind CSS 4.3.3
+  major upgrade, which is outside this patch's scope. Revisit in a separate
+  Tailwind 4 migration before deployment or a demo outside this machine.
+- ESLint 8.57.0 is end-of-life and no longer receives fixes. It is retained in
+  Step C because Next.js 15.5's `next lint` and eslint-config-next@15 support
+  ESLint 8. Migrate to ESLint 9+ with flat config when upgrading to Next.js 16.
+- The app only listens on 127.0.0.1. The production build is built and tested
+  locally; no deployment or demo outside this machine has been approved.
