@@ -160,7 +160,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["actor_user_id"], ["users.id"], ondelete="SET NULL"
+            ["actor_user_id"], ["users.id"], ondelete="NO ACTION"
         ),
         sa.ForeignKeyConstraint(
             ["org_id"], ["organizations.id"], ondelete="RESTRICT"

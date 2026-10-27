@@ -36,7 +36,7 @@ class AuditLog(Base):
     )
     actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id", ondelete="NO ACTION"),
         nullable=True,
     )
     action: Mapped[str] = mapped_column(String(100), nullable=False)

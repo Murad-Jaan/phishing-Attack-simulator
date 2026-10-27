@@ -1,10 +1,31 @@
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+
+
+def _alembic_config() -> Config:
+    config = Config(str(BACKEND_DIR / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
+    return config
 
 
 def test_auth_migration_is_at_head(db_session: Session) -> None:
     version = db_session.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "0002_auth"
+    head = ScriptDirectory.from_config(_alembic_config()).get_current_head()
+    assert version == head
+
+
+def test_models_and_migrations_do_not_drift(
+    migrated_test_database: str, monkeypatch
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", migrated_test_database)
+    command.check(_alembic_config())
 
 
 def test_expected_auth_tables_exist(db_session: Session) -> None:

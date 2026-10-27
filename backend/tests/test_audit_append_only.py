@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import AuditLog, Organization
@@ -59,3 +60,25 @@ def test_audit_log_truncate_is_blocked(
     with pytest.raises(Exception, match="audit_log is append-only"):
         db_session.execute(text("TRUNCATE audit_log"))
         db_session.commit()
+
+
+def test_user_delete_is_blocked_when_referenced_by_audit_log(
+    db_session: Session, user_factory
+) -> None:
+    user = user_factory()
+    db_session.add(
+        AuditLog(
+            org_id=user.org_id,
+            actor_user_id=user.id,
+            action="test.actor",
+            entity_type="user",
+            entity_id=str(user.id),
+        )
+    )
+    db_session.commit()
+
+    with pytest.raises(IntegrityError):
+        db_session.delete(user)
+        db_session.commit()
+
+    db_session.rollback()
