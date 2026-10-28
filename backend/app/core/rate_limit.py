@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import hmac
 import hashlib
-import time
-from typing import Optional
 
 from fastapi import Request
 from redis import Redis
@@ -18,7 +16,8 @@ class RateLimitResult:
 
 
 def _hmac_key(salt: str) -> str:
-    return hmac.new(settings.SECRET_KEY.encode(), salt.encode(), hashlib.sha256).hexdigest()
+    key = getattr(settings, "SECRET_KEY", None) or getattr(settings, "SESSION_SECRET", None) or getattr(settings, "CSRF_SECRET", "")
+    return hmac.new(str(key).encode(), salt.encode(), hashlib.sha256).hexdigest()
 
 
 def account_key(email: str) -> str:
@@ -52,7 +51,6 @@ def check_rate_limit(request: Request, email: str) -> RateLimitResult:
         # fail closed
         return RateLimitResult(False, 60)
     ip = getattr(request.state, "client_ip", None) or (request.client.host if request.client else "")
-    now = int(time.time())
     window = 900  # 15m
     ak = account_key(email)
     ik = ip_key(ip)

@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.core import trusted_proxy
 
@@ -11,7 +10,6 @@ def test_untrusted_ignores_forwarded_header() -> None:
     def get_ip(request: Request):
         return {"ip": trusted_proxy.get_client_ip(request)}
 
-    client = TestClient(app)
     scope = {"type": "http", "method": "GET", "headers": [(b"x-forwarded-for", b"1.2.3.4")], "client": ("192.168.1.100", 1234)}
     req = Request(scope)
     assert trusted_proxy.get_client_ip(req) == "192.168.1.100"

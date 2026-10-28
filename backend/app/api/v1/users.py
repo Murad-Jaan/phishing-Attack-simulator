@@ -42,7 +42,7 @@ async def patch_user(user_id: str, req: PatchUserRequest, request: Request, db: 
         if target.role == UserRole.ADMIN and req.role != UserRole.ADMIN:
             from sqlalchemy import func, select
 
-            cnt = db.execute(select(func.count(User.id)).where(User.org_id == target.org_id, User.role == UserRole.ADMIN, User.is_active == True)).scalar_one()
+            cnt = db.execute(select(func.count(User.id)).where(User.org_id == target.org_id, User.role == UserRole.ADMIN, User.is_active.is_(True))).scalar_one()
             if cnt <= 1:
                 from fastapi.responses import JSONResponse
 
@@ -53,7 +53,7 @@ async def patch_user(user_id: str, req: PatchUserRequest, request: Request, db: 
         if target.is_active is True and req.is_active is False and target.role == UserRole.ADMIN:
             from sqlalchemy import func, select
 
-            cnt = db.execute(select(func.count(User.id)).where(User.org_id == target.org_id, User.role == UserRole.ADMIN, User.is_active == True)).scalar_one()
+            cnt = db.execute(select(func.count(User.id)).where(User.org_id == target.org_id, User.role == UserRole.ADMIN, User.is_active.is_(True))).scalar_one()
             if cnt <= 1:
                 from fastapi.responses import JSONResponse
 

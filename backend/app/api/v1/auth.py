@@ -32,8 +32,10 @@ async def get_csrf(request: Request, response: Response, db: Session = Depends(g
 async def login(req: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     csrf_cookie = csrf.get_csrf_cookie(request)
     csrf_header = request.headers.get("X-CSRF-Token")
-    if not csrf_cookie or not csrf_header or not csrf.verify_csrf_token(csrf_cookie, None):
-        if not csrf.check_origin(request):
+    if csrf_cookie and csrf_header and csrf.verify_csrf_token(csrf_cookie, None):
+        pass
+    elif not csrf.check_origin(request):
+        if not (csrf_cookie and csrf_header and csrf.verify_csrf_token(csrf_cookie, None)):
             raise HTTPException(status_code=403, detail="csrf_failed")
     rl = rate_limit.check_rate_limit(request, req.email)
     if not rl.allowed:
@@ -41,10 +43,26 @@ async def login(req: LoginRequest, request: Request, response: Response, db: Ses
     stmt = select(User).where(User.email == req.email.lower())
     res = db.execute(stmt)
     user = res.scalar_one_or_none()
-    from app.core.security import verify_password_with_dummy, needs_rehash, hash_password
+    from app.core.security import needs_rehash, hash_password
 
-    ok = verify_password_with_dummy(user.password_hash if user else None, req.password)
-    if not ok or not user or not user.is_active:
+    from app.core import security
+
+    if user is None:
+        try:
+            security.verify_password_with_dummy(None, req.password)
+        except Exception:
+            pass
+        rate_limit.record_fail(req.email)
+        raise HTTPException(status_code=401, detail="invalid_credentials")
+    try:
+        ok = security.ph.verify(user.password_hash, req.password)
+    except Exception:
+        try:
+            security.ph.verify(security.DUMMY_HASH, req.password)
+        except Exception:
+            pass
+        ok = False
+    if not ok or not user.is_active:
         rate_limit.record_fail(req.email)
         raise HTTPException(status_code=401, detail="invalid_credentials")
     rate_limit.record_success(req.email)
