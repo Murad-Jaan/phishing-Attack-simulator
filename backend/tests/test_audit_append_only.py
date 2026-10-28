@@ -25,7 +25,9 @@ def test_audit_log_insert_is_allowed(
     row = _insert_audit_row(db_session, organization)
     assert row.id is not None
 
-    count = db_session.execute(text("SELECT count(*) FROM audit_log")).scalar_one()
+    count = db_session.execute(
+        text("SELECT count(*) FROM audit_log WHERE id = :id"), {"id": row.id}
+    ).scalar_one()
     assert count == 1
 
 

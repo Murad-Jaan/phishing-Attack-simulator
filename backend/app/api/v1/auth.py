@@ -37,7 +37,7 @@ async def login(req: LoginRequest, request: Request, response: Response, db: Ses
     elif not csrf.check_origin(request):
         if not (csrf_cookie and csrf_header and csrf.verify_csrf_token(csrf_cookie, None)):
             raise HTTPException(status_code=403, detail="csrf_failed")
-    rl = rate_limit.check_rate_limit(request, req.email)
+    rl = rate_limit.check_rate_limit_request(request, req.email)
     if not rl.allowed:
         raise HTTPException(status_code=429, headers={"Retry-After": str(rl.retry_after or 60)}, detail="rate_limited")
     stmt = select(User).where(User.email == req.email.lower())
@@ -47,25 +47,22 @@ async def login(req: LoginRequest, request: Request, response: Response, db: Ses
 
     from app.core import security
 
+    ok: bool
     if user is None:
         try:
             security.verify_password_with_dummy(None, req.password)
         except Exception:
             pass
-        rate_limit.record_fail(req.email)
+        rate_limit.record_fail_for(req.email)
         raise HTTPException(status_code=401, detail="invalid_credentials")
     try:
-        ok = security.ph.verify(user.password_hash, req.password)
+        ok = bool(security.ph.verify(user.password_hash, req.password))
     except Exception:
-        try:
-            security.ph.verify(security.DUMMY_HASH, req.password)
-        except Exception:
-            pass
         ok = False
     if not ok or not user.is_active:
-        rate_limit.record_fail(req.email)
+        rate_limit.record_fail_for(req.email)
         raise HTTPException(status_code=401, detail="invalid_credentials")
-    rate_limit.record_success(req.email)
+    rate_limit.record_success_for(req.email)
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(req.password)
         db.add(user)

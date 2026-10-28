@@ -34,6 +34,14 @@ def _redact(value: Any) -> Any:
     return value
 
 
+def _hash_bytes(value: str | None) -> bytes | None:
+    if value is None or value == "":
+        return None
+    import hashlib
+
+    return hashlib.sha256(value.encode()).digest()
+
+
 def write_audit(
     db: Session,
     *,
@@ -46,8 +54,16 @@ def write_audit(
     after: dict[str, Any] | None = None,
     reason: str | None = None,
     ip_hash: bytes | None = None,
+    ip: str | None = None,
+    user_agent: str | None = None,
     request_id: str | None = None,
 ) -> AuditLog:
+    if ip_hash is None and ip:
+        ip_hash = _hash_bytes(ip)
+    if user_agent:
+        ua_hash = _hash_bytes(user_agent)
+        if ua_hash and reason is None:
+            reason = f"ua:{ua_hash.hex()}"
     row = AuditLog(
         org_id=org_id,
         actor_user_id=actor_user_id,

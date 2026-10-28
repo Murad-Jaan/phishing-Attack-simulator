@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hmac
 import hashlib
+from typing import cast
 
 from fastapi import Request
 from redis import Redis
@@ -45,73 +46,81 @@ def _get_redis() -> Redis | None:
         return None
 
 
-def check_rate_limit(request: Request, email: str) -> RateLimitResult:
-    r = _get_redis()
-    if r is None:
-        # fail closed
-        return RateLimitResult(False, 60)
-    ip = getattr(request.state, "client_ip", None) or (request.client.host if request.client else "")
+def check_rate_limit(redis_client: Redis, ip: str, email: str) -> RateLimitResult:
     window = 900  # 15m
     ak = account_key(email)
     ik = ip_key(ip)
     lk = lock_key(email)
     try:
-        lk_ttl = r.ttl(lk)
+        lk_ttl = int(cast(int, redis_client.ttl(lk)))
         if lk_ttl and lk_ttl > 0:
             return RateLimitResult(False, lk_ttl)
-        a = r.incr(ak)
+        a = int(cast(int, redis_client.incr(ak)))
         if a == 1:
-            r.expire(ak, window)
-        if a > 20:
-            ra = r.ttl(ak)
+            redis_client.expire(ak, window)
+        if a > 5:
+            ra = int(cast(int, redis_client.ttl(ak)))
             return RateLimitResult(False, ra if ra and ra > 0 else window)
-        i = r.incr(ik)
+        i = int(cast(int, redis_client.incr(ik)))
         if i == 1:
-            r.expire(ik, window)
+            redis_client.expire(ik, window)
         if i > 20:
-            ra = r.ttl(ik)
+            ra = int(cast(int, redis_client.ttl(ik)))
             return RateLimitResult(False, ra if ra and ra > 0 else window)
         return RateLimitResult(True)
     except Exception:
         return RateLimitResult(False, 60)
 
 
-def record_fail(email: str) -> None:
-    r = _get_redis()
-    if r is None:
-        return
+def record_fail(redis_client: Redis, email: str) -> None:
     lk = lock_key(email)
     try:
-        cnt = r.incr(f"{lk}:cnt")
+        cnt = int(cast(int, redis_client.incr(f"{lk}:cnt")))
         if cnt == 1:
-            r.expire(f"{lk}:cnt", 3600)
+            redis_client.expire(f"{lk}:cnt", 3600)
         if cnt >= 5:
-            # doubling to 1h cap
             ttl = min(60 * (2 ** (cnt - 5)), 3600)
-            r.setex(lk, ttl, "1")
+            redis_client.setex(lk, ttl, "1")
     except Exception:
         pass
 
 
-def record_success(email: str) -> None:
+def record_success(redis_client: Redis, email: str) -> None:
+    lk = lock_key(email)
+    try:
+        redis_client.delete(lk)
+        redis_client.delete(f"{lk}:cnt")
+        redis_client.delete(account_key(email))
+    except Exception:
+        pass
+
+
+def clear_lockouts_for_email(redis_client: Redis, email: str) -> None:
+    lk = lock_key(email)
+    try:
+        redis_client.delete(lk)
+        redis_client.delete(f"{lk}:cnt")
+    except Exception:
+        pass
+
+
+def check_rate_limit_request(request: Request, email: str) -> RateLimitResult:
+    r = _get_redis()
+    if r is None:
+        return RateLimitResult(False, 60)
+    ip = getattr(request.state, "client_ip", None) or (request.client.host if request.client else "")
+    return check_rate_limit(r, ip, email)
+
+
+def record_fail_for(email: str) -> None:
     r = _get_redis()
     if r is None:
         return
-    lk = lock_key(email)
-    try:
-        r.delete(lk)
-        r.delete(f"{lk}:cnt")
-    except Exception:
-        pass
+    record_fail(r, email)
 
 
-def clear_lockouts_for_email(email: str) -> None:
+def record_success_for(email: str) -> None:
     r = _get_redis()
     if r is None:
         return
-    lk = lock_key(email)
-    try:
-        r.delete(lk)
-        r.delete(f"{lk}:cnt")
-    except Exception:
-        pass
+    record_success(r, email)
