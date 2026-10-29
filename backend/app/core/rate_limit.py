@@ -104,6 +104,16 @@ def clear_lockouts_for_email(redis_client: Redis, email: str) -> None:
         pass
 
 
+def clear_user_lockout(redis_client: Redis, email: str) -> None:
+    lk = lock_key(email)
+    try:
+        redis_client.delete(lk)
+        redis_client.delete(f"{lk}:cnt")
+        redis_client.delete(account_key(email))
+    except Exception:
+        pass
+
+
 def check_rate_limit_request(request: Request, email: str) -> RateLimitResult:
     r = _get_redis()
     if r is None:
