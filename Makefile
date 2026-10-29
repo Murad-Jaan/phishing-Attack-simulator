@@ -1,4 +1,4 @@
-.PHONY: up down test lint migrate seed reset web-prod
+.PHONY: up down test lint migrate seed unlock-user reset web-prod
 
 up:
 	@test -f .env || cp .env.example .env
@@ -26,6 +26,10 @@ migrate:
 
 seed:
 	docker compose exec -T -e APP_ENV=development -e PYTHONPATH=/app api python -m app.scripts.seed_dev
+
+unlock-user:
+	@test -n "$(EMAIL)" || { echo "ERROR: EMAIL is required (usage: make unlock-user EMAIL=<email>)"; exit 1; }
+	docker compose exec -T -e PYTHONPATH=/app -e UNLOCK_EMAIL=$(EMAIL) api python -m app.scripts.unlock_user
 
 web-prod:
 	docker compose up --build -d web-prod
