@@ -53,6 +53,8 @@ jobs:
           mypy app
       - name: Run tests
         env:
+          DATABASE_URL: postgresql+psycopg://phish:phishpass@localhost:5432/phishsim
+          REDIS_URL: redis://localhost:6379/0
           TEST_DATABASE_URL: postgresql+psycopg://phish:phishpass@localhost:5432/phishsim_test
           TEST_REDIS_URL: redis://localhost:6379/15
         run: |
