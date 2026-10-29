@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
   const contentSecurityPolicy = isProd
     ? `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; style-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'self';`
-    : `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';`
+    : `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self';`
 
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-nonce', nonce)
@@ -20,6 +20,7 @@ export function middleware(request: NextRequest) {
   })
 
   response.headers.set('Content-Security-Policy', contentSecurityPolicy)
+  response.headers.set('Cache-Control', 'no-store')
 
   return response
 }

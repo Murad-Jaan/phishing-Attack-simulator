@@ -17,6 +17,7 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          tint: "var(--primary-tint)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -41,6 +42,18 @@ module.exports = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          tint: "var(--success-tint)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          tint: "var(--danger-tint)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          tint: "var(--warning-tint)",
         },
       },
       borderRadius: {
