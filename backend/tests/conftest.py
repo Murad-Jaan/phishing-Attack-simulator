@@ -117,3 +117,19 @@ def user_factory(db_session: Session, organization: Organization):
         return user
 
     return create_user
+
+
+@pytest.fixture
+def client_factory(db_session: Session):
+    """TestClient whose app uses the SAME db session (with rollback)."""
+    import app.main as app_main
+    from app.db import get_db
+    from fastapi.testclient import TestClient
+
+    def _get_db_override():
+        yield db_session
+
+    app_main.app.dependency_overrides[get_db] = _get_db_override
+    c = TestClient(app_main.app)
+    yield c
+    app_main.app.dependency_overrides.pop(get_db, None)
