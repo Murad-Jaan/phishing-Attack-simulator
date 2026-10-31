@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// baseURL is environment-driven:
+//   - docker dev-stack runs:  BASE_URL default http://phishsim-web:3000 (compose service)
+//   - CI / local host runs:   BASE_URL=http://127.0.0.1:3000 (webServer `npm start`)
+// The API address the web server itself talks to comes from API_INTERNAL_URL
+// (default http://127.0.0.1:8000), set in the environment before `npx playwright test`.
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
