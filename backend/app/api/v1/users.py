@@ -17,6 +17,7 @@ router = APIRouter()
 
 
 @router.get("/users")
+@router.get("/api/v1/users")
 async def list_users(request: Request, db: Session = Depends(get_db), admin=Depends(require_admin)):
     users = db.query(User).all()
     return [
@@ -40,6 +41,7 @@ def error_response_409(request: Request, message: str):
 
 
 @router.patch("/users/{user_id}")
+@router.patch("/api/v1/users/{user_id}")
 async def patch_user(user_id: str, req: PatchUserRequest, request: Request, db: Session = Depends(get_db), admin=Depends(require_admin), current=Depends(get_current_user)):
     from sqlalchemy import func, select
 

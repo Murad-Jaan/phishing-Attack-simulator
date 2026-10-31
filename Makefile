@@ -14,7 +14,11 @@ reset:
 
 test:
 	docker compose exec -T api pytest -v
-	docker run --rm --network phishing-attack-simulator_dev -v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.64.1-jammy sh -c "cd /app && npx playwright test --reporter=line"
+	@test -f .env
+	docker run --rm --network phishing-attack-simulator_dev \
+		-e DEMO_ADMIN_1_PASSWORD="$$(awk -F= '/^DEMO_ADMIN_1_PASSWORD=/{print substr($$0, index($$0,"=")+1)}' .env)" \
+		-v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.64.1-jammy \
+		sh -c "cd /app && npx playwright test --reporter=line"
 
 lint:
 	docker compose exec -T api ruff check .

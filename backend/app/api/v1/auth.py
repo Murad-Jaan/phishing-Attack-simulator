@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hmac
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,25 +20,42 @@ router = APIRouter()
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
 @router.get("/api/v1/auth/csrf")
 async def get_csrf(request: Request, response: Response, db: Session = Depends(get_db)):
-    token = csrf.issue_login_csrf(response)
+    token_cookie = request.cookies.get(cookies.SESSION_COOKIE_NAME) or request.cookies.get("phishsim_session")
+    sess = session_service.get_session_by_token(db, token_cookie) if token_cookie else None
+    if sess is not None:
+        token = csrf.issue_session_csrf(response, str(sess.id))
+    else:
+        token = csrf.issue_login_csrf(response)
     return {"csrf_token": token}
 
 
-@router.post("/auth/login")
-async def login(req: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def _login_csrf_ok(db: Session, request: Request) -> bool:
     csrf_cookie = csrf.get_csrf_cookie(request)
     csrf_header = request.headers.get("X-CSRF-Token")
-    if csrf_cookie and csrf_header and csrf.verify_csrf_token(csrf_cookie, None):
-        pass
-    elif not csrf.check_origin(request):
-        if not (csrf_cookie and csrf_header and csrf.verify_csrf_token(csrf_cookie, None)):
-            raise HTTPException(status_code=403, detail="csrf_failed")
+    if not csrf_cookie or not csrf_header or not hmac.compare_digest(csrf_cookie, csrf_header):
+        return False
+    if csrf.verify_csrf_token(csrf_cookie, None):
+        return True
+    token_cookie = request.cookies.get(cookies.SESSION_COOKIE_NAME) or request.cookies.get("phishsim_session")
+    if not token_cookie:
+        return False
+    sess = session_service.get_session_by_token(db, token_cookie)
+    if sess is None:
+        return False
+    return csrf.verify_csrf_token(csrf_cookie, str(sess.id))
+
+
+@router.post("/auth/login")
+@router.post("/api/v1/auth/login")
+async def login(req: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+    if not _login_csrf_ok(db, request) and not csrf.check_origin(request):
+        raise HTTPException(status_code=403, detail="csrf_failed")
     rl = rate_limit.check_rate_limit_request(request, req.email)
     if not rl.allowed:
         raise HTTPException(status_code=429, headers={"Retry-After": str(rl.retry_after or 60)}, detail="rate_limited")
@@ -87,10 +106,11 @@ async def login(req: LoginRequest, request: Request, response: Response, db: Ses
 
 
 @router.post("/auth/logout")
+@router.post("/api/v1/auth/logout")
 async def logout(request: Request, response: Response, db: Session = Depends(get_db), sess=Depends(get_current_session)):
     csrf_cookie = csrf.get_csrf_cookie(request)
     csrf_header = request.headers.get("X-CSRF-Token")
-    if not csrf_cookie or not csrf_header or not csrf.verify_csrf_token(csrf_cookie, str(sess.id)):
+    if not csrf_cookie or not csrf_header or not hmac.compare_digest(csrf_cookie, csrf_header) or not csrf.verify_csrf_token(csrf_cookie, str(sess.id)):
         raise HTTPException(status_code=403, detail="csrf_failed")
     session_service.revoke_session(db, sess)
     user = db.get(User, sess.user_id)
@@ -116,5 +136,14 @@ async def logout(request: Request, response: Response, db: Session = Depends(get
 
 
 @router.get("/auth/me")
+@router.get("/api/v1/auth/me")
 async def me(user=Depends(get_current_user)):
-    return {"user": {"id": str(user.id), "email": user.email, "role": user.role.value, "org_id": str(user.org_id)}}
+    return {
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "display_name": user.display_name,
+            "role": user.role.value,
+            "org_id": str(user.org_id),
+        }
+    }

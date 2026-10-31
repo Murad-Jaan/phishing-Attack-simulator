@@ -85,8 +85,64 @@ jobs:
         run: |
           cd frontend
           npx tsc --noEmit
-      - name: Playwright with axe
+      - name: Generate run-only secrets
+        run: |
+          P1="$(openssl rand -hex 16)"
+          P2="$(openssl rand -hex 16)"
+          S1="$(openssl rand -hex 32)"
+          S2="$(openssl rand -hex 32)"
+          echo "::add-mask::${P1}"
+          echo "::add-mask::${P2}"
+          echo "::add-mask::${S1}"
+          echo "::add-mask::${S2}"
+          echo "DEMO_ADMIN_1_PASSWORD=${P1}" >> "$GITHUB_ENV"
+          echo "DEMO_ADMIN_2_PASSWORD=${P2}" >> "$GITHUB_ENV"
+          echo "SESSION_SECRET=${S1}" >> "$GITHUB_ENV"
+          echo "CSRF_SECRET=${S2}" >> "$GITHUB_ENV"
+      - name: Create CI-only .env for docker compose (never committed)
+        run: |
+          cp .env.example .env
+          echo "DEMO_ADMIN_1_PASSWORD=${DEMO_ADMIN_1_PASSWORD}" >> .env
+          echo "DEMO_ADMIN_2_PASSWORD=${DEMO_ADMIN_2_PASSWORD}" >> .env
+          echo "SESSION_SECRET=${SESSION_SECRET}" >> .env
+          echo "CSRF_SECRET=${CSRF_SECRET}" >> .env
+      - name: Start API stack
+        run: docker compose up -d --build postgres redis mailpit api
+      - name: Wait for API health (90s max)
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              echo "API healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API did not become healthy within 90s; api container logs:"
+          docker compose logs --no-color api
+          exit 1
+      - name: Run database migrations
+        run: docker compose exec -T api alembic upgrade head
+      - name: Seed demo admin (run-only password)
+        run: make seed
+      - name: Install Playwright browsers
         run: |
           cd frontend
           npx playwright install --with-deps chromium
+      - name: Playwright with axe (production build)
+        env:
+          API_INTERNAL_URL: http://127.0.0.1:8000
+          DEMO_ADMIN_1_PASSWORD: ${{ env.DEMO_ADMIN_1_PASSWORD }}
+        run: |
+          cd frontend
           npx playwright test
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+      - name: Print API container logs on failure
+        if: failure()
+        run: docker compose logs --no-color api

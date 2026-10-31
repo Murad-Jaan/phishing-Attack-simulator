@@ -42,31 +42,31 @@ Phase 2 builds the core platform only. It does **not** include event tracking, a
 
 ### M1 — Auth, sessions, CSRF, roles and audit foundation (L)
 
-| Task | Size | Acceptance criteria |
-|---|---|---|
-| Password hashing (Argon2id) | M | Only Argon2id hashes stored; parameters documented; rehash-on-login supported. |
-| Server-side sessions | M | HttpOnly + SameSite cookies; session rotation on login; logout invalidates server-side. |
-| CSRF protection | M | Mutating requests require a valid CSRF token; missing/invalid token returns `403`; login protected. |
-| Login rate limiting and lockout | M | Per-account and per-IP throttling; lockout with backoff; generic errors; audit entry. |
-| Roles (admin, analyst, employee) | M | Server-side RBAC on every endpoint; UI hides unauthorized actions; tests for 401/403. |
-| Last-admin guard | S | Cannot demote/deactivate the last active admin; clear error; test. |
-| **Audit table and write helper** | M | Append-only audit table; write helper used by privileged/destructive actions; no secrets logged; tests. |
-| Auth audit entries | S | Login success/failure, logout, lockout, role change recorded without secrets. |
-| **Extend seed script with two clearly labelled demo admins** | S | Add `demo-admin-1` and `demo-admin-2` once users and auth exist; separation of duties (approver is not the creator) is tested with them; still refuses in production and excluded from real reporting. |
-| **Frontend auth shell** | M | Login form, session handling, CSRF integration, error states accessible; strings from `src/content/en.ts`. |
+| Task | Size | Acceptance criteria | Status |
+|---|---|---|---|
+| Password hashing (Argon2id) | M | Only Argon2id hashes stored; parameters documented; rehash-on-login supported. | ✅ Done — `app/core/security.py` (m=64MiB t=3 p=1, rehash on login), `tests/test_security_hashing.py` |
+| Server-side sessions | M | HttpOnly + SameSite cookies; session rotation on login; logout invalidates server-side. | ✅ Done — `app/services/session_service.py`, 60m idle + 8h absolute, hashed tokens; `tests/test_sessions.py` |
+| CSRF protection | M | Mutating requests require a valid CSRF token; missing/invalid token returns `403`; login protected. | ✅ Done — `app/core/csrf.py`, double-submit (cookie == header) enforced; `tests/test_csrf.py`, `tests/test_auth_endpoints.py` |
+| Login rate limiting and lockout | M | Per-account and per-IP throttling; lockout with backoff; generic errors; audit entry. | ✅ Done — `app/core/rate_limit.py` (5/15m account, 20/15m IP, lockout doubling to 1h cap, fail closed); `tests/test_rate_limit.py` |
+| Roles (admin, analyst, employee) | M | Server-side RBAC on every endpoint; UI hides unauthorized actions; tests for 401/403. | ✅ API done — `app/api/deps/auth.py`, `tests/test_rbac.py`; UI action-hiding lands with the campaign screens |
+| Last-admin guard | S | Cannot demote/deactivate the last active admin; clear error; test. | ✅ Done — `PATCH /api/v1/users/{id}` with org row lock, 409 `last_admin_guard`; `tests/test_last_admin.py` |
+| **Audit table and write helper** | M | Append-only audit table; write helper used by privileged/destructive actions; no secrets logged; tests. | ✅ Done — `app/core/audit.py` (hashes IP, redacts secrets), append-only triggers; `tests/test_audit_*.py` |
+| Auth audit entries | S | Login success/failure, logout, lockout, role change recorded without secrets. | ✅ Done — auth/user endpoints write audit rows; `tests/test_auth_audit.py` |
+| **Extend seed script with two clearly labelled demo admins** | S | Add `demo-admin-1` and `demo-admin-2` once users and auth exist; separation of duties (approver is not the creator) is tested with them; still refuses in production and excluded from real reporting. | ✅ Done — `make seed` / `make unlock-user EMAIL=`; `tests/test_seed_demo.py`; demo passwords from env (`DEMO_ADMIN_1_PASSWORD`/`DEMO_ADMIN_2_PASSWORD`) |
+| **Frontend auth shell** | M | Login form, session handling, CSRF integration, error states accessible; strings from `src/content/en.ts`. | ✅ Done — `/login` + server-side session shell (`src/components/auth/`, `src/lib/auth/session.ts`), same-origin `/api/v1/*` rewrite via `API_INTERNAL_URL`; Playwright: `tests/auth.spec.ts`, `tests/a11y.spec.ts` |
 
 **Note:** individual-detail access (admin-only with logged reason) belongs to Phase 3 reporting; the role and audit foundation is built here.
 
 ### M2 — Organization settings and retention foundation (M)
 
-| Task | Size | Acceptance criteria |
-|---|---|---|
-| Organization settings | M | Name, primary domain, timezone; validation; audit on change. |
-| Sandbox sending-domain allowlist | M | Only `example.com`, `*.test`, `*.invalid`; rejects real domains; admin sees warning. |
-| Minimum group size setting | S | Hard floor 5; admins can raise, never lower; API rejects lower values. |
-| Retention setting | S | Default 90 days, configurable; preview scope; deletion/anonymization audited. |
-| Settings UI | M | Accessible form states; permission-gated; no silent failures. |
-| Retention job skeleton | M | Celery task scaffold (runs in M6); idempotent; dry-run mode. |
+| Task | Size | Acceptance criteria | Status |
+|---|---|---|---|
+| Organization settings | M | Name, primary domain, timezone; validation; audit on change. | ⬜ Not started — next up |
+| Sandbox sending-domain allowlist | M | Only `example.com`, `*.test`, `*.invalid`; rejects real domains; admin sees warning. | ⬜ Not started — next up |
+| Minimum group size setting | S | Hard floor 5; admins can raise, never lower; API rejects lower values. | ⬜ Not started — next up |
+| Retention setting | S | Default 90 days, configurable; preview scope; deletion/anonymization audited. | ⬜ Not started — next up |
+| Settings UI | M | Accessible form states; permission-gated; no silent failures. | ⬜ Not started — next up |
+| Retention job skeleton | M | Celery task scaffold (runs in M6); idempotent; dry-run mode. | ⬜ Not started — next up |
 
 ### M3 — Groups and targets with CSV import (M)
 
