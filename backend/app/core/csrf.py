@@ -1,8 +1,9 @@
 import base64
+import hmac
 import json
 import time
 
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 from starlette.datastructures import URL
 
 from app.core.config import settings
@@ -75,6 +76,23 @@ def get_csrf_cookie(request: Request) -> str | None:
             "phishsim_csrf"
         )
     return request.cookies.get("phishsim_csrf") or request.cookies.get(CSRF_COOKIE_NAME)
+
+
+def assert_session_csrf(request: Request, session_id: str | None) -> None:
+    """Double-submit check for authenticated mutating requests.
+
+    Raises 403 csrf_failed unless the CSRF cookie matches the X-CSRF-Token
+    header and the token is valid for the given server-side session.
+    """
+    cookie = get_csrf_cookie(request)
+    header = request.headers.get("X-CSRF-Token")
+    if (
+        not cookie
+        or not header
+        or not hmac.compare_digest(cookie, header)
+        or not verify_csrf_token(cookie, session_id)
+    ):
+        raise HTTPException(status_code=403, detail="csrf_failed")
 
 
 def check_origin(request: Request) -> bool:

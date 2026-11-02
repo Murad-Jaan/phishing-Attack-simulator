@@ -5,6 +5,8 @@ All defaults below are the approved Phase 1 assumptions. Items marked **[needs d
 | Assumption | Value | Notes | Status |
 |---|---|---|---|
 | Retention | 90 days (configurable) | Enforced via a retention job. Deletion/anonymization is logged to audit. | Approved |
+| Retention bounds | 1–365 days | Configurable range for `retention_days`; hard-enforced by service validation and a database CHECK constraint. Default 90. | Approved |
+| Audit log retention | 1 year | Longer retention than application data, required for accountability. | **[needs decision]** |
 | Sandbox domains | `example.com`, `*.test`, `*.invalid` only | Hard allowlist for sending/simulation. No real brands or production domains. | Approved |
 | Reporting scope | Group-level by default | Individual detail is not shown by default. | Approved |
 | Group suppression | Groups below 5 members suppressed | Hard floor of 5. Admins can raise this value, but can **never** lower it below 5. | Approved |
