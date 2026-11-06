@@ -81,3 +81,60 @@ def test_audit_log_append_only_triggers_exist(db_session: Session) -> None:
         "audit_log_no_update_delete",
         "audit_log_no_truncate",
     }
+
+
+def test_org_settings_columns_exist(db_session: Session) -> None:
+    columns = set(
+        db_session.execute(
+            text(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'organizations'
+                """
+            )
+        ).scalars()
+    )
+    assert {
+        "timezone",
+        "retention_days",
+        "min_group_size",
+        "send_domain_allowlist",
+    }.issubset(columns)
+
+
+def test_org_settings_check_constraints_exist(db_session: Session) -> None:
+    constraints = set(
+        db_session.execute(
+            text(
+                """
+                SELECT conname
+                FROM pg_constraint
+                WHERE conrelid = 'organizations'::regclass
+                  AND contype = 'c'
+                """
+            )
+        ).scalars()
+    )
+    assert {
+        "ck_organizations_retention_days",
+        "ck_organizations_min_group_size",
+    }.issubset(constraints)
+
+
+def test_org_settings_defaults(db_session: Session) -> None:
+    row = db_session.execute(
+        text(
+            """
+            SELECT column_name, column_default
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'organizations'
+              AND column_name IN ('timezone', 'retention_days', 'min_group_size')
+            """
+        )
+    ).all()
+    defaults = {name: dflt for name, dflt in row}
+    assert "'UTC'" in defaults["timezone"]
+    assert "90" in defaults["retention_days"]
+    assert "5" in defaults["min_group_size"]

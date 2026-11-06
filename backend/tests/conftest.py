@@ -133,3 +133,42 @@ def client_factory(db_session: Session):
     c = TestClient(app_main.app)
     yield c
     app_main.app.dependency_overrides.pop(get_db, None)
+
+
+def login_as(client, email: str, password: str) -> None:
+    """Log a user in through the real login flow (sets session + CSRF cookies)."""
+    r = client.get("/api/v1/auth/csrf")
+    assert r.status_code == 200, r.text
+    token = r.json()["csrf_token"]
+    r2 = client.post(
+        "/auth/login",
+        json={"email": email, "password": password},
+        headers={"X-CSRF-Token": token},
+    )
+    assert r2.status_code == 200, r2.text
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limit_state():
+    """Clear Redis login rate-limit state before each test.
+
+    Tests log in real sessions repeatedly from one shared client IP and
+    would otherwise trip the 5-per-account / 20-per-IP windows. Rate-limit
+    behaviour itself is covered by tests/test_rate_limit.py on its own DB.
+    """
+    try:
+        from app.core.redis import get_redis
+
+        r = get_redis()
+        for k in list(r.keys("rl:*")) + list(r.keys("lock:*")):
+            r.delete(k)
+    except Exception:
+        pass
+    yield
+
+
+def session_csrf_token(client) -> str:
+    """Fetch a session-bound CSRF token for an authenticated client."""
+    r = client.get("/api/v1/auth/csrf")
+    assert r.status_code == 200, r.text
+    return r.json()["csrf_token"]
