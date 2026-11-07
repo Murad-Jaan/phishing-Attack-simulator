@@ -1,67 +1,80 @@
-module.exports = {
-  darkMode: ["class"],
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  darkMode: ['class', '[data-theme="dark"]'],
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-          tint: "var(--primary-tint)",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+        background: 'var(--bg)',
+        foreground: 'var(--text)',
+        border: 'var(--border)',
+        input: 'var(--control-border)',
+        control: 'var(--control-border)',
+        ring: 'var(--primary)',
+        surface: 'var(--surface)',
+        'surface-muted': 'var(--surface-muted)',
+        card: {
+          DEFAULT: 'var(--surface)',
+          foreground: 'var(--text)',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: 'var(--surface)',
+          foreground: 'var(--text)',
         },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+        primary: {
+          DEFAULT: 'var(--primary)',
+          hover: 'var(--primary-hover)',
+          foreground: 'var(--on-primary)',
+          tint: 'var(--primary-tint)',
+          'tint-border': 'var(--primary-tint-border)',
+        },
+        secondary: {
+          DEFAULT: 'var(--surface-muted)',
+          foreground: 'var(--text)',
+        },
+        muted: {
+          DEFAULT: 'var(--surface-muted)',
+          foreground: 'var(--text-muted)',
+        },
+        strong: 'var(--text-strong-muted)',
+        danger: {
+          DEFAULT: 'var(--danger)',
+          hover: 'var(--danger-hover)',
+          foreground: 'var(--on-danger)',
+          tint: 'var(--danger-tint)',
+          'tint-border': 'var(--danger-tint-border)',
+        },
+        destructive: {
+          DEFAULT: 'var(--danger)',
+          foreground: 'var(--on-danger)',
         },
         success: {
-          DEFAULT: "var(--success)",
-          tint: "var(--success-tint)",
-        },
-        danger: {
-          DEFAULT: "var(--danger)",
-          tint: "var(--danger-tint)",
+          DEFAULT: 'var(--success)',
+          tint: 'var(--success-tint)',
+          'tint-border': 'var(--success-tint-border)',
         },
         warning: {
-          DEFAULT: "var(--warning)",
-          tint: "var(--warning-tint)",
+          DEFAULT: 'var(--warning)',
+          tint: 'var(--warning-tint)',
+          'tint-border': 'var(--warning-tint-border)',
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
       },
     },
   },
   plugins: [],
-}
+};
+
+export default config;
