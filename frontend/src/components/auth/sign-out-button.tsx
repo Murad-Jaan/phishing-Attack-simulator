@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 
 import { en } from '@/content/en';
 import { Button } from '@/components/ui/button';
@@ -45,18 +46,20 @@ export default function SignOutButton() {
   }
 
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className="flex w-full flex-col gap-2">
       <Button
         variant="secondary"
+        className="w-full justify-start gap-2"
         onClick={onSignOut}
         disabled={working}
         aria-busy={working}
         data-testid="sign-out"
       >
+        <LogOut className="h-4 w-4" aria-hidden="true" />
         {en.auth.signOut}
       </Button>
       {hasError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm text-danger">
           {en.auth.signOutError}
         </p>
       )}

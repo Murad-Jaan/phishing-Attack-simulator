@@ -14,10 +14,12 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl px-4 py-8">
       <Card>
         <CardHeader>
-          <CardTitle>{en.auth.signedInAs}</CardTitle>
+          <CardTitle as="h1" className="text-2xl font-bold leading-8">
+            {en.auth.signedInAs}
+          </CardTitle>
           <CardDescription>
             {user.display_name} ({user.email})
           </CardDescription>
@@ -30,10 +32,10 @@ export default async function HomePage() {
               {user.role}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground max-w-prose">{en.auth.shellWelcome}</p>
+          <p className="max-w-prose text-sm text-muted-foreground">{en.auth.shellWelcome}</p>
           <SignOutButton />
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
