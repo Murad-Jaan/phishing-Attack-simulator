@@ -8,7 +8,7 @@ Phishing Simulation + Detection platform. This file is the source of truth for U
 |---|---|
 | Standards | WCAG 2.2 AA; Nielsen and Shneiderman as review checklists |
 | Components | Tailwind CSS + shadcn/ui (Radix primitives). Do not hand-roll dialogs, menus, tabs, tooltips, toasts or form controls |
-| Visual identity | Clean, calm, light/dark. Tokens below come from the Figma home page and the legacy CSS variables |
+| Visual identity | Clean, calm, light/dark. The palette uses bright blue, blue green, dusty white, pink sand, and dark sand; tokens below are the source of truth |
 | Type | Inter, with a system-font fallback stack |
 | Grid and spacing | 4px base unit, 8px rhythm |
 | Targets | 44x44px minimum touch/click targets; large, close primary actions (Fitts's law) |
@@ -23,59 +23,63 @@ All text pairs must be at least 4.5:1 (normal text) and UI boundaries/icons at l
 
 | Token | Hex | Use |
 |---|---|---|
-| `--bg` | #F6F7FB | Page background |
+| `--bg` | #F7FBFA | Page background |
 | `--surface` | #FFFFFF | Cards, dialogs, inputs |
-| `--surface-muted` | #F8FAFC | Muted panels, table headers, ghost hover |
-| `--border` | #E5E8F0 | Decorative dividers and card borders |
-| `--control-border` | #7E8CA6 | Form and button boundaries (3.39:1 on surface, 3.17:1 on bg) |
-| `--text` | #14182B | Body and headings |
-| `--text-muted` | #5F667D | Secondary text and helper copy |
-| `--text-strong-muted` | #4A5169 | Nav items, table headers |
-| `--primary` | #2F5BEA | Primary buttons, links, focus |
-| `--primary-hover` | #2447C9 | Primary hover |
-| `--on-primary` | #FFFFFF | Text and icons on primary |
-| `--primary-tint` | #EAF0FF | Active nav, selected rows |
-| `--primary-tint-border` | #CBD9FF | Tinted borders |
-| `--danger` | #C62828 | Risk, destructive buttons |
-| `--danger-hover` | #A61E1E | Destructive hover |
-| `--on-danger` | #FFFFFF | Text and icons on danger |
-| `--danger-tint` | #FDECEC | Risk badges and alerts |
-| `--danger-tint-border` | #F5C6C6 | Risk alert and badge borders |
-| `--success` | #17703A | Safe, reported, completed |
-| `--success-tint` | #E6F6EC | Safe badges and alerts |
-| `--success-tint-border` | #BFE6CC | Safe alert and badge borders |
-| `--warning` | #855500 | Caution text |
-| `--warning-tint` | #FFF3DC | Caution badges and alerts |
-| `--warning-tint-border` | #F0D9A8 | Caution alert and badge borders |
+| `--surface-muted` | #EEFBF9 | Muted panels, table headers, ghost hover |
+| `--border` | #CFE9E5 | Decorative dividers and card borders |
+| `--control-border` | #A28089 | Form and button boundaries (3.36:1 on bg, 3.51:1 on surface) |
+| `--text` | #2B2328 | Body and headings |
+| `--text-muted` | #5F4F56 | Secondary text and helper copy |
+| `--text-strong-muted` | #4A3D43 | Nav items, table headers |
+| `--primary` | #51E2F5 | Primary button and icon fills |
+| `--primary-hover` | #3AD4E8 | Primary fill hover |
+| `--on-primary` | #102A30 | Text and icons on primary |
+| `--primary-strong` | #0B6B7A | Links, active nav text, focus ring |
+| `--primary-tint` | #D8F8FC | Active nav, selected rows |
+| `--primary-tint-border` | #9DEEF5 | Tinted borders |
+| `--danger` | #FFA8B6 | Destructive button fill |
+| `--danger-hover` | #FF8FA1 | Destructive fill hover |
+| `--on-danger` | #3A1119 | Text and icons on danger |
+| `--danger-strong` | #B23A5A | Risk text, invalid borders, danger icons |
+| `--danger-tint` | #FFE8EC | Risk badges and alerts |
+| `--danger-tint-border` | #FFC2CC | Risk alert and badge borders |
+| `--success` | #146B5A | Safe, reported, completed text and icons |
+| `--success-tint` | #E6FDF9 | Safe badges and alerts |
+| `--success-tint-border` | #9DF9EF | Safe alert and badge borders |
+| `--warning` | #6B5D00 | Caution text and icons |
+| `--warning-tint` | #FBFCD9 | Caution badges and alerts |
+| `--warning-tint-border` | #EDF756 | Caution alert and badge borders |
 
 ### Dark theme
 
 | Token | Hex | Use |
 |---|---|---|
-| `--bg` | #0F1521 | Page background |
-| `--surface` | #18212F | Cards, dialogs, inputs |
-| `--surface-muted` | #131B28 | Muted panels, table headers, ghost hover |
-| `--border` | #2A3649 | Decorative dividers and card borders |
-| `--control-border` | #6B7890 | Form and button boundaries (3.63:1 on surface, 4.10:1 on bg) |
-| `--text` | #E8EDF6 | Body and headings |
-| `--text-muted` | #98A6BD | Secondary text and helper copy |
-| `--text-strong-muted` | #C3CCDB | Nav items, table headers |
-| `--primary` | #6E93FF | Primary buttons, links, focus |
-| `--primary-hover` | #8FADFF | Primary hover |
-| `--on-primary` | #0F1521 | Text and icons on primary |
-| `--primary-tint` | #1C2B4D | Active nav, selected rows |
-| `--primary-tint-border` | #2C3F6B | Tinted borders |
-| `--danger` | #FF6B6B | Risk, destructive buttons |
-| `--danger-hover` | #FF8A8A | Destructive hover |
-| `--on-danger` | #0F1521 | Text and icons on danger |
-| `--danger-tint` | #3A1E24 | Risk badges and alerts |
-| `--danger-tint-border` | #5A2E36 | Risk alert and badge borders |
-| `--success` | #3EC06F | Safe, reported, completed |
-| `--success-tint` | #143125 | Safe badges and alerts |
-| `--success-tint-border` | #24503A | Safe alert and badge borders |
-| `--warning` | #F0B429 | Caution text |
-| `--warning-tint` | #34280F | Caution badges and alerts |
-| `--warning-tint-border` | #5A4A1E | Caution alert and badge borders |
+| `--bg` | #171315 | Page background |
+| `--surface` | #211B1E | Cards, dialogs, inputs |
+| `--surface-muted` | #1B1619 | Muted panels, table headers, ghost hover |
+| `--border` | #3A3034 | Decorative dividers and card borders |
+| `--control-border` | #A28089 | Form and button boundaries (4.83:1 on surface, 5.25:1 on bg) |
+| `--text` | #F7F2F3 | Body and headings |
+| `--text-muted` | #C4B6BC | Secondary text and helper copy |
+| `--text-strong-muted` | #DDD2D6 | Nav items, table headers |
+| `--primary` | #51E2F5 | Primary button and icon fills |
+| `--primary-hover` | #7CECF7 | Primary fill hover |
+| `--on-primary` | #102A30 | Text and icons on primary |
+| `--primary-strong` | #7CECF7 | Links, active nav text, focus ring |
+| `--primary-tint` | #14363D | Active nav, selected rows |
+| `--primary-tint-border` | #1F5F6A | Tinted borders |
+| `--danger` | #FFA8B6 | Destructive button fill |
+| `--danger-hover` | #FFC2CC | Destructive fill hover |
+| `--on-danger` | #3A1119 | Text and icons on danger |
+| `--danger-strong` | #FFA8B6 | Risk text, invalid borders, danger icons |
+| `--danger-tint` | #3A1E28 | Risk badges and alerts |
+| `--danger-tint-border` | #6A3543 | Risk alert and badge borders |
+| `--success` | #9DF9EF | Safe, reported, completed text and icons |
+| `--success-tint` | #1C3A34 | Safe badges and alerts |
+| `--success-tint-border` | #2F6A5F | Safe alert and badge borders |
+| `--warning` | #EDF756 | Caution text and icons |
+| `--warning-tint` | #33280F | Caution badges and alerts |
+| `--warning-tint-border` | #5C4D1E | Caution alert and badge borders |
 
 ### Verified text contrast
 
@@ -83,31 +87,32 @@ Minimum ratio across every background the token is used on:
 
 | Foreground token | Backgrounds used | Light | Dark |
 |---|---|---|---|
-| `--text` | bg, surface, surface-muted, tints | 15.38 | 11.90 |
-| `--text-muted` | bg, surface, surface-muted, tints | 4.99 | 5.68 |
-| `--text-strong-muted` | bg, surface, surface-muted | 7.34 | 10.00 |
-| `--primary` | bg, surface, primary-tint | 4.84 | 4.85 |
-| `--danger` | bg, surface, danger-tint | 4.92 | 5.44 |
-| `--success` | bg, surface, success-tint | 5.49 | 6.00 |
-| `--warning` | bg, surface, warning-tint | 5.80 | 7.74 |
-| `--on-primary` | primary | 5.52 | 6.33 |
-| `--on-danger` | danger | 5.62 | 6.58 |
+| `--text` | bg, surface, surface-muted, tints | 13.11 | 11.12 |
+| `--text-muted` | bg, surface, surface-muted, tints | 6.57 | 6.32 |
+| `--text-strong-muted` | bg, surface, surface-muted | 9.71 | 11.50 |
+| `--primary-strong` | bg, surface, primary-tint | 5.52 | 9.35 |
+| `--danger-strong` | bg, surface, danger-tint | 4.94 | 8.26 |
+| `--success` | bg, surface, success-tint | 6.03 | 10.11 |
+| `--warning` | bg, surface, warning-tint | 6.28 | 12.43 |
+| `--on-primary` | primary | 9.70 | 9.70 |
+| `--on-danger` | danger | 9.05 | 9.05 |
 
 Spot checks for the most common pairs:
 
 | Pair | Light | Dark |
 |---|---|---|
-| `--text` on `--bg` | 16.41 | 15.55 |
-| `--text` on `--surface` | 17.57 | 13.78 |
-| `--text-muted` on `--bg` | 5.33 | 7.42 |
-| `--text-muted` on `--surface` | 5.70 | 6.57 |
-| `--primary` on `--primary-tint` | 4.84 | 4.85 |
-| `--danger` on `--danger-tint` | 4.92 | 5.44 |
-| `--success` on `--success-tint` | 5.49 | 6.00 |
-| `--warning` on `--warning-tint` | 5.80 | 7.74 |
-| `--on-primary` on `--primary` | 5.52 | 6.33 |
+| `--text` on `--bg` | 14.66 | 16.62 |
+| `--text` on `--surface` | 15.29 | 15.28 |
+| `--text-muted` on `--bg` | 7.35 | 9.44 |
+| `--text-muted` on `--surface` | 7.67 | 8.68 |
+| `--primary-strong` on `--primary-tint` | 5.52 | 9.35 |
+| `--danger-strong` on `--danger-tint` | 4.94 | 8.26 |
+| `--success` on `--success-tint` | 6.03 | 10.11 |
+| `--warning` on `--warning-tint` | 6.28 | 12.43 |
+| `--on-primary` on `--primary` | 9.70 | 9.70 |
+| `--on-danger` on `--danger` | 9.05 | 9.05 |
 
-Non-text contrast: `--control-border` is 3.17:1 light and 3.63:1 dark. The focus ring (`--primary`) is 5.15:1 light on the page and 5.61:1 dark on the card surface (6.33:1 on the dark page background). Do not use `--control-border` or `--border` for text; they are for boundaries only.
+Non-text contrast: `--control-border` is 3.36:1 light on the page and 3.51:1 light on the card surface; 5.25:1 dark on the page and 4.83:1 dark on the card surface. The focus ring (`--primary-strong`) is 5.92:1 light on the page and 6.18:1 light on the card surface; 13.33:1 dark on the page and 12.25:1 dark on the card surface. Do not use `--control-border` or `--border` for text; they are for boundaries only.
 
 Rule: re-run the contrast check whenever a token changes, and keep the ratios in this file up to date. Respect `prefers-color-scheme` and offer a manual toggle.
 

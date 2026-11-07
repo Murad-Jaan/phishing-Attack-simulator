@@ -34,10 +34,10 @@ export interface AlertProps
 }
 
 const iconTone: Record<AlertVariant, string> = {
-  info: 'text-primary',
+  info: 'text-primary-strong',
   success: 'text-success',
   warning: 'text-warning',
-  danger: 'text-danger',
+  danger: 'text-danger-strong',
 };
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(

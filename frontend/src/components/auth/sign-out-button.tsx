@@ -59,7 +59,7 @@ export default function SignOutButton() {
         {en.auth.signOut}
       </Button>
       {hasError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-sm text-danger-strong">
           {en.auth.signOutError}
         </p>
       )}

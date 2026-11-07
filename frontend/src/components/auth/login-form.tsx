@@ -6,7 +6,7 @@ import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 import { en } from '@/content/en';
 import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,7 +141,7 @@ export default function LoginForm() {
               {PASSWORD_RESET_ENABLED && (
                 <Link
                   href="/forgot-password"
-                  className="rounded text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  className="rounded text-sm font-semibold text-primary-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                 >
                   {en.auth.forgotPassword}
                 </Link>
@@ -189,7 +189,17 @@ export default function LoginForm() {
             {submitting ? en.auth.signInWorking : en.auth.signIn}
           </Button>
         </form>
-        <p className="mt-6 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+        <div className="mt-6 border-t border-border pt-4">
+          <p className="text-center text-sm text-muted-foreground">{en.auth.newUser}</p>
+          <Link
+            href="/signup"
+            className={buttonVariants({ variant: 'secondary', className: 'mt-3 w-full' })}
+            data-testid="signup-link"
+          >
+            {en.auth.signUp}
+          </Link>
+        </div>
+        <p className="mt-4 text-xs leading-5 text-muted-foreground">
           {en.auth.authorizationNotice}
         </p>
       </CardContent>
