@@ -13,12 +13,24 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'line',
-  webServer: process.env.CI ? {
-    command: 'npm run build && npm start',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 300 * 1000,
-  } : undefined,
+  webServer: process.env.CI
+    ? {
+        command: 'npm run build && npm start',
+        url: 'http://127.0.0.1:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 300 * 1000,
+      }
+    : {
+        command: 'npm run build && npm start -- -p 3001',
+        url: 'http://127.0.0.1:3001/login',
+        reuseExistingServer: true,
+        timeout: 300 * 1000,
+        env: {
+          NODE_ENV: 'production',
+          APP_ENV: 'production',
+          API_INTERNAL_URL: process.env.API_INTERNAL_URL ?? 'http://api:8000',
+        },
+      },
   use: {
     baseURL: process.env.BASE_URL || (process.env.CI ? 'http://127.0.0.1:3000' : 'http://phishsim-web:3000'),
     trace: 'on-first-retry',

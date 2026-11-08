@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -55,6 +55,7 @@ function isActivePath(pathname: string, href: string) {
 export function AppShell({ user, initialTheme, children }: AppShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const isAdmin = user.role === 'admin';
   const navItems = isAdmin ? [...primaryNav, settingsNav] : primaryNav;
   const initials =
@@ -77,6 +78,7 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setMobileOpen(false);
+        menuButtonRef.current?.focus();
       }
     }
     document.addEventListener('keydown', onKeyDown);
@@ -182,6 +184,7 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
             <span className="truncate text-sm font-semibold text-foreground">{en.app.name}</span>
           </Link>
           <button
+            ref={menuButtonRef}
             type="button"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-controls="app-sidebar"
