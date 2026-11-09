@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 
 const FORWARDED_COOKIE_NAMES = [
@@ -15,11 +16,15 @@ export interface SessionUser {
   org_id: string;
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+export async function getForwardedCookieHeader(): Promise<string> {
   const cookieStore = await cookies();
-  const forwarded = FORWARDED_COOKIE_NAMES.filter((name) => cookieStore.has(name))
+  return FORWARDED_COOKIE_NAMES.filter((name) => cookieStore.has(name))
     .map((name) => `${name}=${cookieStore.get(name)?.value ?? ''}`)
     .join('; ');
+}
+
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
+  const forwarded = await getForwardedCookieHeader();
   if (!forwarded) {
     return null;
   }
@@ -36,4 +41,4 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return null;
   }
   return data.user;
-}
+});

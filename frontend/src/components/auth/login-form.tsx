@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 import { en } from '@/content/en';
 import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PASSWORD_RESET_ENABLED } from '@/lib/features';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -17,6 +19,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [invalidCredentials, setInvalidCredentials] = useState(false);
   const [errorCount, setErrorCount] = useState(0);
   const alertRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +49,7 @@ export default function LoginForm() {
       return;
     }
     setErrorMessage('');
+    setInvalidCredentials(false);
     setSubmitting(true);
     try {
       const token = await requestCsrfToken();
@@ -65,9 +69,10 @@ export default function LoginForm() {
       if (res.status === 429) {
         const retryAfter = Number(res.headers.get('Retry-After')) || 60;
         setErrorMessage(
-          en.auth.rateLimitMessage.replace('{seconds}', String(Math.max(retryAfter, 1)))
+          en.auth.rateLimitMessage.replace('{seconds}', String(Math.max(retryAfter, 1))),
         );
       } else {
+        setInvalidCredentials(true);
         setErrorMessage(en.auth.invalidCredentials);
       }
     } catch {
@@ -84,15 +89,36 @@ export default function LoginForm() {
     }
   }, [errorMessage, errorCount]);
 
+  const errorDescribedBy = errorMessage !== '' ? 'login-error' : undefined;
+
   return (
     <Card className="mx-auto w-full max-w-md">
-      <CardHeader>
-        <CardTitle>{en.app.name}</CardTitle>
+      <CardHeader className="mb-6 items-center text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <ShieldCheck className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <p className="mt-1 text-sm font-semibold text-foreground">{en.app.name}</p>
+        <CardTitle as="h1" className="mt-2 text-2xl font-bold leading-8">
+          {en.auth.welcomeTitle}
+        </CardTitle>
         <CardDescription>{en.auth.loginPurpose}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} noValidate>
-          <div className="mb-4">
+        {errorMessage !== '' && (
+          <Alert
+            ref={alertRef}
+            id="login-error"
+            variant="danger"
+            title={en.auth.genericErrorTitle}
+            data-testid="login-error"
+            tabIndex={-1}
+            className="mb-4 outline-none"
+          >
+            {errorMessage}
+          </Alert>
+        )}
+        <form onSubmit={onSubmit} noValidate className="space-y-4">
+          <div className="space-y-2">
             <Label htmlFor="email">{en.auth.emailLabel}</Label>
             <Input
               id="email"
@@ -101,15 +127,27 @@ export default function LoginForm() {
               autoComplete="email"
               autoFocus
               required
+              placeholder={en.auth.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1"
+              aria-invalid={invalidCredentials || undefined}
+              aria-describedby={errorDescribedBy}
               data-testid="login-email"
             />
           </div>
-          <div className="mb-4">
-            <Label htmlFor="password">{en.auth.passwordLabel}</Label>
-            <div className="relative mt-1">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password">{en.auth.passwordLabel}</Label>
+              {PASSWORD_RESET_ENABLED && (
+                <Link
+                  href="/forgot-password"
+                  className="rounded text-sm font-semibold text-primary-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                >
+                  {en.auth.forgotPassword}
+                </Link>
+              )}
+            </div>
+            <div className="relative">
               <Input
                 id="password"
                 name="password"
@@ -119,33 +157,28 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pr-12"
+                aria-invalid={invalidCredentials || undefined}
+                aria-describedby={errorDescribedBy}
                 data-testid="login-password"
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 min-w-9 px-2"
+                size="icon"
+                className="absolute right-0 top-0 rounded-l-none rounded-r-lg text-muted-foreground focus-visible:ring-offset-surface"
                 aria-label={reveal ? en.auth.hidePassword : en.auth.showPassword}
                 aria-pressed={reveal}
                 data-testid="login-reveal"
                 onClick={() => setReveal((r) => !r)}
               >
-                {reveal ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                {reveal ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
               </Button>
             </div>
           </div>
-          {errorMessage !== '' && (
-            <Alert
-              ref={alertRef}
-              variant="danger"
-              title={en.auth.genericErrorTitle}
-              data-testid="login-error"
-              className="mb-4 outline-none"
-            >
-              {errorMessage}
-            </Alert>
-          )}
           <Button
             type="submit"
             className="w-full"
@@ -155,8 +188,20 @@ export default function LoginForm() {
           >
             {submitting ? en.auth.signInWorking : en.auth.signIn}
           </Button>
-          <p className="mt-4 text-xs text-muted-foreground">{en.auth.authorizationNotice}</p>
         </form>
+        <div className="mt-6 border-t border-border pt-4">
+          <p className="text-center text-sm text-muted-foreground">{en.auth.newUser}</p>
+          <Link
+            href="/signup"
+            className={buttonVariants({ variant: 'secondary', className: 'mt-3 w-full' })}
+            data-testid="signup-link"
+          >
+            {en.auth.signUp}
+          </Link>
+        </div>
+        <p className="mt-4 text-xs leading-5 text-muted-foreground">
+          {en.auth.authorizationNotice}
+        </p>
       </CardContent>
     </Card>
   );
