@@ -15,7 +15,7 @@ module.exports = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "rgb(var(--primary-rgb) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground))",
           tint: "var(--primary-tint)",
         },
@@ -29,7 +29,7 @@ module.exports = {
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          foreground: "var(--text-muted)",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",

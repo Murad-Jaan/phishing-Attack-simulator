@@ -12,6 +12,7 @@
     --text-muted: #5F667D;
     --text-strong-muted: #4A5169;
     --primary: #2F5BEA;
+    --primary-rgb: 47 91 234;
     --primary-tint: #EAF0FF;
     --danger: #C62828;
     --danger-tint: #FDECEC;
@@ -48,9 +49,14 @@
     --text: #E8EDF6;
     --text-muted: #98A6BD;
     --primary: #6E93FF;
+    --primary-rgb: 110 147 255;
     --danger: #FF6B6B;
     --success: #3EC06F;
     --warning: #F0B429;
+    --primary-tint: #1D2A4D;
+    --danger-tint: #3A1D22;
+    --success-tint: #153525;
+    --warning-tint: #3A2E12;
 
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
