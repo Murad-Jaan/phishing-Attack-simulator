@@ -1,7 +1,7 @@
 // Unit tests for the simulator logic. Run: node scripts/test.js [index.html]
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const html = fs.readFileSync(process.argv[2] || 'index.html', 'utf8');
-const js = html.match(/<script>([\s\S]*)<\/script>/)[1];
+const js = html.match(/<script\b[^>]*>([\s\S]*)<\/script>/i)[1];
 const els = {}, mk = () => ({ innerHTML: '', textContent: '', value: '', className: '', style: {}, scrollIntoView() {} });
 const U = require('url').URL; U.createObjectURL = () => 'blob:x'; U.revokeObjectURL = () => {};
 const ctx = { console, Math, setTimeout, URL: U, localStorage: { getItem: () => null, setItem() {} }, confirm: () => true,
