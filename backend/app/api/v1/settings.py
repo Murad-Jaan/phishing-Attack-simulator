@@ -12,7 +12,7 @@ from app.core import csrf
 from app.core.errors import error_payload
 from app.db import get_db
 from app.models.organization import Organization
-from app.services import settings_service
+from app.services import retention_service, settings_service
 
 
 router = APIRouter()
@@ -34,6 +34,20 @@ def _validation_response(request: Request, fields: dict[str, str]) -> JSONRespon
         status_code=422,
         content=error_payload(request, "validation_error", "Invalid settings", fields),
     )
+
+
+@router.get("/settings/retention/preview")
+@router.get("/api/v1/settings/retention/preview")
+async def preview_retention(
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Read-only retention counts for the admin's organization.
+
+    The response contains scope names and integer counts only; it never
+    includes session tokens, hashes, or other sensitive row data.
+    """
+    return {"scopes": retention_service.preview(db, org_id=admin.org_id)}
 
 
 @router.get("/settings/organization")
