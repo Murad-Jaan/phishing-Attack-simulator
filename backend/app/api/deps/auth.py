@@ -33,3 +33,13 @@ def require_admin(user=Depends(get_current_user)):
     if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="forbidden")
     return user
+
+
+def require_template_author(user=Depends(get_current_user)):
+    """Admins and analysts may manage the template library; employees may not."""
+
+    from app.models.user import UserRole
+
+    if user.role not in (UserRole.ADMIN, UserRole.ANALYST):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return user

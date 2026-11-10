@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.v1 import health, auth, users
 from app.api.v1 import settings as settings_router
+from app.api.v1 import templates as templates_router
 from app.core.csp import build_csp
 from app.core.errors import generic_exception_handler, validation_exception_handler, http_exception_handler
 from app.core.config import settings
@@ -66,3 +67,4 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(settings_router.router)
+app.include_router(templates_router.router)
