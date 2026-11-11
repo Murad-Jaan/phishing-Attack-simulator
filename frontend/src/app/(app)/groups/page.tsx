@@ -1,14 +1,13 @@
-import { Users } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
-import { PlaceholderPage } from '@/components/placeholder-page';
-import { en } from '@/content/en';
+import GroupsWorkspace from '@/components/groups/groups-workspace';
+import { getSessionUser } from '@/lib/auth/session';
 
-export default function GroupsOverviewPage() {
-  return (
-    <PlaceholderPage
-      title={en.nav.groups}
-      description={en.pages.groups}
-      icon={Users}
-    />
-  );
+export default async function GroupsOverviewPage() {
+  const user = await getSessionUser();
+  if (!user) {
+    redirect('/login');
+  }
+
+  return <GroupsWorkspace />;
 }
