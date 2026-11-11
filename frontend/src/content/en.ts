@@ -117,7 +117,7 @@ export const en = {
     status: "Health Status",
   },
   groups: {
-    title: "Target groups",
+    title: "Groups",
     subtitle:
       "Manage authorized recipients with the minimum data needed. Groups under the reporting minimum are flagged.",
     newGroup: "New group",
