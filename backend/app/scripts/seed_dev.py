@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models import Organization, User, UserRole
+from app.scripts.seed_templates import seed_templates
 
 
 def _pwd(name: str) -> str:
@@ -51,6 +52,12 @@ def seed_dev(db: Session):
         print("Created demo organization: Demo Organization (slug=demo-org, is_demo=true)")
     else:
         print("Demo organization already exists, skipping setup")
+
+    inserted = seed_templates(db, org)
+    if inserted:
+        print(f"Created {inserted} demo template(s) from SC-01..SC-10")
+    else:
+        print("Demo templates already exist, skipping template setup")
 
     passwords = {"DEMO_ADMIN_1_PASSWORD": pwd1, "DEMO_ADMIN_2_PASSWORD": pwd2}
     for admin in DEMO_ADMINS:
