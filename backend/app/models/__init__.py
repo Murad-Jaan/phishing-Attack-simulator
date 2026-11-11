@@ -4,6 +4,12 @@ from app.models.group import Group, GroupMember
 from app.models.organization import Organization
 from app.models.session import AuthSession
 from app.models.target import Target
+from app.models.template import (
+    Template,
+    TemplateDifficulty,
+    TemplateRedFlag,
+    TemplateStatus,
+)
 from app.models.user import User, UserRole
 
 __all__ = [
@@ -13,6 +19,10 @@ __all__ = [
     "Group",
     "GroupMember",
     "Organization",
+    "Template",
+    "TemplateDifficulty",
+    "TemplateRedFlag",
+    "TemplateStatus",
     "Target",
     "TimestampMixin",
     "User",

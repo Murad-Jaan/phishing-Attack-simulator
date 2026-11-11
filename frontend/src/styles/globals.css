@@ -136,3 +136,42 @@
     @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
   }
 }
+
+@layer components {
+  .template-preview-email {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .template-preview-meta {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  .template-preview-line {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .template-preview-line + .template-preview-line {
+    margin-top: 0.25rem;
+  }
+
+  .template-preview-label {
+    display: inline-block;
+    min-width: 4.5rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .template-preview-body {
+    overflow-wrap: anywhere;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+}
