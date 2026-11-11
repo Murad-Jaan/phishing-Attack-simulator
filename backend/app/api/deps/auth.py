@@ -43,3 +43,12 @@ def require_template_author(user=Depends(get_current_user)):
     if user.role not in (UserRole.ADMIN, UserRole.ANALYST):
         raise HTTPException(status_code=403, detail="forbidden")
     return user
+
+
+def require_staff(user=Depends(get_current_user)):
+    """Admin or analyst: roles allowed to manage groups and targets."""
+    from app.models.user import UserRole
+
+    if user.role not in (UserRole.ADMIN, UserRole.ANALYST):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return user
