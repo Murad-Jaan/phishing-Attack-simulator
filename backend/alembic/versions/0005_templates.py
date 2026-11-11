@@ -1,7 +1,7 @@
 """Add versioned simulation templates and red-flag metadata
 
-Revision ID: 0004_templates
-Revises: 0003_org_settings
+Revision ID: 0005_templates
+Revises: 0004_groups_targets
 Create Date: 2026-11-10 00:00:00.000000
 
 """
@@ -11,8 +11,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0004_templates"
-down_revision = "0003_org_settings"
+revision = "0005_templates"
+down_revision = "0004_groups_targets"
 branch_labels = None
 depends_on = None
 

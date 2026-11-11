@@ -619,7 +619,7 @@ export default function GroupsWorkspace() {
                 <a
                   href="/api/v1/groups/import-template"
                   download
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-primary-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <Upload aria-hidden="true" size={16} />
                   {en.groups.templateLabel}
