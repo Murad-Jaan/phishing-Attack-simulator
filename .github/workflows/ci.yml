@@ -32,6 +32,19 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      mailpit:
+        image: axllent/mailpit:v1.20.7
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: 1
+          MP_SMTP_AUTH_ALLOW_INSECURE: 1
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 1025:1025
+          - 8025:8025
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -51,6 +64,8 @@ jobs:
         run: |
           cd backend
           mypy app
+      - name: Alias Mailpit to localhost for sandbox SMTP
+        run: sudo sh -c 'echo "127.0.0.1 mailpit" >> /etc/hosts'
       - name: Run tests
         env:
           DATABASE_URL: postgresql+psycopg://phish:phishpass@localhost:5432/phishsim
