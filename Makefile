@@ -18,8 +18,9 @@ test:
 	docker compose exec -T redis sh -c 'for pattern in "rl:acct:*" "rl:ip:*" "lock:acct:*"; do redis-cli --scan --pattern "$$pattern" | while read -r key; do [ -n "$$key" ] && redis-cli DEL "$$key" >/dev/null; done; done'
 	docker run --rm --network phishing-attack-simulator_dev \
 		-e DEMO_ADMIN_1_PASSWORD="$$(awk -F= '/^DEMO_ADMIN_1_PASSWORD=/{print substr($$0, index($$0,"=")+1)}' .env)" \
+		-e DEMO_ADMIN_2_PASSWORD="$$(awk -F= '/^DEMO_ADMIN_2_PASSWORD=/{print substr($$0, index($$0,"=")+1)}' .env)" \
 		-v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.64.1-jammy \
-		sh -c "cd /app && npx playwright test --reporter=line"
+		sh -c "cd /app && npx playwright test --reporter=line --workers=1"
 
 lint:
 	docker compose exec -T api ruff check .
