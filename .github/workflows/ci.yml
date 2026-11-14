@@ -148,6 +148,7 @@ jobs:
         env:
           API_INTERNAL_URL: http://127.0.0.1:8000
           DEMO_ADMIN_1_PASSWORD: ${{ env.DEMO_ADMIN_1_PASSWORD }}
+          DEMO_ADMIN_2_PASSWORD: ${{ env.DEMO_ADMIN_2_PASSWORD }}
         run: |
           cd frontend
           npx playwright test

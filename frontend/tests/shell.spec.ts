@@ -1,22 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+import { openDemoAdmin, storageStatePath } from './support/auth';
+
 test.describe.configure({ mode: 'serial' });
-
-const DEMO_ADMIN_EMAIL = 'demo-admin-1@example.test';
-
-async function loginAsDemoAdmin(page: Page): Promise<void> {
-  const password = process.env.DEMO_ADMIN_1_PASSWORD ?? '';
-  expect(
-    password,
-    'DEMO_ADMIN_1_PASSWORD must be provided at run time (never committed) and `make seed` must have run on the dev DB',
-  ).toMatch(/^\S{12,}$/);
-  await page.goto('/login');
-  await page.getByTestId('login-email').fill(DEMO_ADMIN_EMAIL);
-  await page.getByTestId('login-password').fill(password);
-  await page.getByTestId('login-submit').click();
-  await page.waitForURL('/');
-}
 
 async function expectNoSeriousA11y(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).analyze();
@@ -27,8 +14,10 @@ async function expectNoSeriousA11y(page: Page): Promise<void> {
 }
 
 test.describe('Authenticated shell and dashboard', () => {
+  test.use({ storageState: storageStatePath('admin1') });
+
   test.beforeEach(async ({ page }) => {
-    await loginAsDemoAdmin(page);
+    await openDemoAdmin(page);
   });
 
   test('authenticated shell and dashboard have no serious accessibility issues in light theme', async ({

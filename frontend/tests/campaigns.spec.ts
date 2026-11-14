@@ -1,31 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const ADMIN_1 = 'demo-admin-1@example.test';
-const ADMIN_2 = 'demo-admin-2@example.test';
+import { storageStatePath, switchDemoAdmin } from './support/auth';
 
-function passwordFor(email: string): string {
-  const name = email === ADMIN_1 ? 'DEMO_ADMIN_1_PASSWORD' : 'DEMO_ADMIN_2_PASSWORD';
-  const password = process.env[name] ?? '';
-  expect(
-    password,
-    `${name} must be provided at run time and \`make seed\` must have run on the dev DB`,
-  ).toMatch(/^\S{12,}$/);
-  return password;
-}
-
-async function loginAs(page: Page, email: string): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('login-email').fill(email);
-  await page.getByTestId('login-password').fill(passwordFor(email));
-  await page.getByTestId('login-submit').click();
-  await page.waitForURL('/');
-}
-
-async function signOut(page: Page): Promise<void> {
-  await page.getByTestId('sign-out').click();
-  await page.waitForURL('/login');
-}
+test.use({ storageState: storageStatePath('admin1') });
 
 async function seedGroup(page: Page, name: string, members: number): Promise<string> {
   return page.evaluate(
@@ -113,9 +91,8 @@ test.describe('Campaigns', () => {
     const campaignName = `M5 campaign ${stamp}`;
     const groupName = `M5 Group ${stamp}`;
 
-    await loginAs(page, ADMIN_1);
-    const groupId = await seedGroup(page, groupName, 5);
     await page.goto('/campaigns');
+    const groupId = await seedGroup(page, groupName, 5);
     await createDraft(page, campaignName);
     await fillWizard(page, groupId);
 
@@ -131,8 +108,7 @@ test.describe('Campaigns', () => {
     );
     await expect(page.getByText('Authorization requested.')).toBeVisible();
 
-    await signOut(page);
-    await loginAs(page, ADMIN_2);
+    await switchDemoAdmin(page, 'admin2');
     await page.goto('/campaigns');
 
     const request = page
@@ -143,8 +119,7 @@ test.describe('Campaigns', () => {
     await request.getByRole('button', { name: 'Approve' }).click();
     await expect(page.getByText('Authorization approved.')).toBeVisible();
 
-    await signOut(page);
-    await loginAs(page, ADMIN_1);
+    await switchDemoAdmin(page, 'admin1');
     await page.goto('/campaigns');
     await page
       .getByTestId('campaign-list')
@@ -166,7 +141,6 @@ test.describe('Campaigns', () => {
     page,
   }: any) => {
     const stamp = Date.now();
-    await loginAs(page, ADMIN_1);
     await page.goto('/campaigns');
     await createDraft(page, `M5 axe light ${stamp}`);
     const results = await new AxeBuilder({ page }).analyze();
@@ -177,7 +151,6 @@ test.describe('Campaigns', () => {
     page,
   }: any) => {
     const stamp = Date.now();
-    await loginAs(page, ADMIN_1);
     await page.goto('/campaigns');
     await createDraft(page, `M5 axe dark ${stamp}`);
     await page.evaluate(() => document.documentElement.classList.add('dark'));
