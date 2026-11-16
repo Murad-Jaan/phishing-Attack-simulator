@@ -19,6 +19,8 @@ from app.models.campaign import (
     Authorization,
     AuthorizationStatus,
     Campaign,
+    CampaignSend,
+    CampaignSendStatus,
     CampaignStatus,
 )
 from app.models.group import Group
@@ -104,6 +106,9 @@ class CampaignCreate(BaseModel):
     template_id: str | None = None
     group_id: str | None = None
     send_time: datetime | None = None
+    send_window_start: datetime | None = None
+    send_window_end: datetime | None = None
+    rate_cap_per_hour: int | None = None
     sending_domain: str | None = None
 
     @field_validator("name")
@@ -123,6 +128,9 @@ class CampaignPatch(BaseModel):
     template_id: str | None = None
     group_id: str | None = None
     send_time: datetime | None = None
+    send_window_start: datetime | None = None
+    send_window_end: datetime | None = None
+    rate_cap_per_hour: int | None = None
     sending_domain: str | None = None
 
     @field_validator("name")
@@ -242,6 +250,9 @@ async def create_campaign(
         name=req.name,
         description=_clean(req.description),
         send_time=req.send_time,
+        send_window_start=req.send_window_start,
+        send_window_end=req.send_window_end,
+        rate_cap_per_hour=req.rate_cap_per_hour or 60,
         sending_domain=(req.sending_domain or org.primary_domain).strip().lower(),
         status=CampaignStatus.DRAFT,
         created_by=user.id,
@@ -266,6 +277,17 @@ async def create_campaign(
             "template_id": str(campaign.template_id) if campaign.template_id else None,
             "group_id": str(campaign.group_id) if campaign.group_id else None,
             "send_time": campaign.send_time.isoformat() if campaign.send_time else None,
+            "send_window_start": (
+                campaign.send_window_start.isoformat()
+                if campaign.send_window_start
+                else None
+            ),
+            "send_window_end": (
+                campaign.send_window_end.isoformat()
+                if campaign.send_window_end
+                else None
+            ),
+            "rate_cap_per_hour": campaign_service.effective_rate_cap(campaign),
             "sending_domain": campaign.sending_domain,
             "status": campaign.status.value,
         },
@@ -318,6 +340,13 @@ async def patch_campaign(
     before["template_id"] = str(campaign.template_id) if campaign.template_id else None
     before["group_id"] = str(campaign.group_id) if campaign.group_id else None
     before["send_time"] = campaign.send_time.isoformat() if campaign.send_time else None
+    before["send_window_start"] = (
+        campaign.send_window_start.isoformat() if campaign.send_window_start else None
+    )
+    before["send_window_end"] = (
+        campaign.send_window_end.isoformat() if campaign.send_window_end else None
+    )
+    before["rate_cap_per_hour"] = campaign_service.effective_rate_cap(campaign)
     before["sending_domain"] = campaign.sending_domain
 
     try:
@@ -331,6 +360,15 @@ async def patch_campaign(
             _apply_group(db, user.org_id, campaign, data["group_id"])
         if "send_time" in data:
             campaign.send_time = data["send_time"]
+        if "send_window_start" in data:
+            campaign.send_window_start = data["send_window_start"]
+        if "send_window_end" in data:
+            campaign.send_window_end = data["send_window_end"]
+        if "rate_cap_per_hour" in data:
+            if data["rate_cap_per_hour"] is None:
+                campaign.rate_cap_per_hour = 60
+            else:
+                campaign.rate_cap_per_hour = data["rate_cap_per_hour"]
         if "sending_domain" in data and data["sending_domain"] is not None:
             campaign.sending_domain = data["sending_domain"].strip().lower()
     except campaign_service.CampaignValidationError as exc:
@@ -341,9 +379,24 @@ async def patch_campaign(
     after["template_id"] = str(campaign.template_id) if campaign.template_id else None
     after["group_id"] = str(campaign.group_id) if campaign.group_id else None
     after["send_time"] = campaign.send_time.isoformat() if campaign.send_time else None
+    after["send_window_start"] = (
+        campaign.send_window_start.isoformat() if campaign.send_window_start else None
+    )
+    after["send_window_end"] = (
+        campaign.send_window_end.isoformat() if campaign.send_window_end else None
+    )
+    after["rate_cap_per_hour"] = campaign_service.effective_rate_cap(campaign)
     after["sending_domain"] = campaign.sending_domain
 
-    for key in ("template_id", "group_id", "send_time", "sending_domain"):
+    for key in (
+        "template_id",
+        "group_id",
+        "send_time",
+        "send_window_start",
+        "send_window_end",
+        "rate_cap_per_hour",
+        "sending_domain",
+    ):
         if before[key] != after[key]:
             scope_changed = True
 
@@ -562,10 +615,10 @@ async def launch_campaign(
             "This campaign cannot be launched yet.",
             problems,
         )
+    window_start, _ = campaign_service.effective_window(campaign)
     campaign.status = (
         CampaignStatus.SCHEDULED
-        if campaign.send_time is None
-        or campaign_service.ensure_utc(campaign.send_time) > campaign_service.utcnow()
+        if window_start > campaign_service.utcnow()
         else CampaignStatus.RUNNING
     )
     db.add(campaign)
@@ -582,6 +635,97 @@ async def launch_campaign(
     )
     db.commit()
     return {"campaign": campaign_service.serialize_campaign(db, campaign)}
+
+
+def _activate_campaign(
+    campaign: Campaign, request: Request, db: Session, user, action: str
+) -> dict[str, Any]:
+    window_start, _ = campaign_service.effective_window(campaign)
+    campaign.status = (
+        CampaignStatus.SCHEDULED
+        if window_start > campaign_service.utcnow()
+        else CampaignStatus.RUNNING
+    )
+    db.add(campaign)
+    db.flush()
+    _audit(
+        request,
+        db,
+        org_id=campaign.org_id,
+        actor_user_id=user.id,
+        action=action,
+        entity_type="campaign",
+        entity_id=str(campaign.id),
+        after={"status": campaign.status.value},
+    )
+    db.commit()
+    return {"campaign": campaign_service.serialize_campaign(db, campaign)}
+
+
+@router.post("/api/v1/campaigns/{campaign_id}/schedule")
+async def schedule_campaign(
+    campaign_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_staff),
+    sess=Depends(get_current_session),
+):
+    csrf.assert_session_csrf(request, str(sess.id))
+    campaign = _get_campaign(db, user.org_id, campaign_id)
+    if campaign is None:
+        return _error(request, 404, "not_found", "Campaign not found")
+    if campaign.status not in (
+        CampaignStatus.APPROVED,
+        CampaignStatus.PAUSED,
+        CampaignStatus.SCHEDULED,
+        CampaignStatus.RUNNING,
+    ):
+        return _error(
+            request,
+            409,
+            "campaign_not_schedulable",
+            "This campaign cannot be scheduled.",
+        )
+    org = _org(db, user.org_id)
+    problems = campaign_service.launch_blockers(db, org, campaign)
+    if problems:
+        return _error(
+            request,
+            409,
+            "authorization_required",
+            "This campaign cannot be scheduled yet.",
+            problems,
+        )
+    return _activate_campaign(campaign, request, db, user, "campaign.schedule")
+
+
+@router.post("/api/v1/campaigns/{campaign_id}/resume")
+async def resume_campaign(
+    campaign_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_staff),
+    sess=Depends(get_current_session),
+):
+    csrf.assert_session_csrf(request, str(sess.id))
+    campaign = _get_campaign(db, user.org_id, campaign_id)
+    if campaign is None:
+        return _error(request, 404, "not_found", "Campaign not found")
+    if campaign.status != CampaignStatus.PAUSED:
+        return _error(
+            request, 409, "campaign_not_paused", "Only a paused campaign can resume."
+        )
+    org = _org(db, user.org_id)
+    problems = campaign_service.launch_blockers(db, org, campaign)
+    if problems:
+        return _error(
+            request,
+            409,
+            "authorization_required",
+            "This campaign cannot resume yet.",
+            problems,
+        )
+    return _activate_campaign(campaign, request, db, user, "campaign.resume")
 
 
 @router.post("/api/v1/campaigns/{campaign_id}/pause")
@@ -656,6 +800,18 @@ async def cancel_campaign(
         auth.revoked_at = campaign_service.utcnow()
         auth.reason = "Campaign cancelled."
         db.add(auth)
+    queued = list(
+        db.execute(
+            select(CampaignSend).where(
+                CampaignSend.campaign_id == campaign.id,
+                CampaignSend.status == CampaignSendStatus.QUEUED.value,
+            )
+        ).scalars()
+    )
+    for row in queued:
+        row.status = CampaignSendStatus.CANCELLED.value
+        row.failure_code = "campaign_cancelled"
+        db.add(row)
     db.add(campaign)
     db.flush()
     _audit(
@@ -667,7 +823,11 @@ async def cancel_campaign(
         entity_type="campaign",
         entity_id=str(campaign.id),
         before={"status": before},
-        after={"status": campaign.status.value, "revoked_authorizations": len(rows)},
+        after={
+            "status": campaign.status.value,
+            "revoked_authorizations": len(rows),
+            "cancelled_sends": len(queued),
+        },
     )
     db.commit()
     return {"campaign": campaign_service.serialize_campaign(db, campaign)}

@@ -117,6 +117,33 @@ services:
       - dev
     restart: unless-stopped
 
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: phishsim-worker:dev
+    container_name: phishsim-beat
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://phish:phishpass@postgres:5432/phishsim}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:Z
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel=info"]
+    networks:
+      - dev
+    restart: unless-stopped
+
   web:
     build:
       context: ./frontend

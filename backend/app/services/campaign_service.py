@@ -88,6 +88,38 @@ def target_count(db: Session, group_id: uuid.UUID | None) -> int:
     return member_count(db, group_id)
 
 
+def effective_rate_cap(campaign: Campaign) -> int:
+    return campaign.rate_cap_per_hour or 60
+
+
+def effective_window(campaign: Campaign) -> tuple[datetime, datetime]:
+    """Return the UTC send window, falling back to the send time and a week."""
+    send_time = (
+        ensure_utc(campaign.send_time)
+        if campaign.send_time is not None
+        else utcnow()
+    )
+    start = (
+        ensure_utc(campaign.send_window_start)
+        if campaign.send_window_start is not None
+        else send_time
+    )
+    end = (
+        ensure_utc(campaign.send_window_end)
+        if campaign.send_window_end is not None
+        else send_time + timedelta(days=7)
+    )
+    return start, end
+
+
+def estimated_last_send(
+    send_time: datetime, recipient_count: int, rate_cap_per_hour: int
+) -> datetime:
+    if recipient_count <= 0:
+        return send_time
+    return send_time + timedelta(hours=(recipient_count - 1) // rate_cap_per_hour)
+
+
 def latest_authorization(db: Session, campaign_id: uuid.UUID) -> Authorization | None:
     return db.execute(
         select(Authorization)
@@ -153,6 +185,9 @@ def serialize_authorization(db: Session, auth: Authorization) -> dict[str, Any]:
         "target_count": auth.target_count,
         "sending_domain": auth.sending_domain,
         "scheduled_send_time": _iso(auth.scheduled_send_time),
+        "send_window_start": _iso(auth.send_window_start),
+        "send_window_end": _iso(auth.send_window_end),
+        "rate_cap_per_hour": auth.rate_cap_per_hour,
         "start_date": _iso(auth.start_date),
         "end_date": _iso(auth.end_date),
         "requested_at": _iso(auth.created_at),
@@ -178,6 +213,9 @@ def serialize_campaign(db: Session, campaign: Campaign) -> dict[str, Any]:
         "group_name": group.name if group else None,
         "target_count": target_count(db, campaign.group_id),
         "send_time": _iso(campaign.send_time),
+        "send_window_start": _iso(campaign.send_window_start),
+        "send_window_end": _iso(campaign.send_window_end),
+        "rate_cap_per_hour": effective_rate_cap(campaign),
         "sending_domain": campaign.sending_domain,
         "status": campaign.status.value,
         "created_by": str(campaign.created_by) if campaign.created_by else None,
@@ -258,12 +296,42 @@ def prepare_authorization_scope(
             "The sending domain is not in this organization's allowlist."
         )
 
+    rate_cap = effective_rate_cap(campaign)
+    if rate_cap < 1 or rate_cap > 1000:
+        fields["rate_cap_per_hour"] = "Choose a rate cap between 1 and 1000 per hour."
+
+    window_start = (
+        ensure_utc(campaign.send_window_start)
+        if campaign.send_window_start is not None
+        else send_time
+    )
+    window_end = (
+        ensure_utc(campaign.send_window_end)
+        if campaign.send_window_end is not None
+        else end
+    )
+    if window_end <= window_start:
+        fields["send_window_end"] = "The send window end must be after its start."
+    if send_time < window_start or send_time > window_end:
+        fields["send_time"] = "The send time must fall inside the send window."
+    if window_start < start or window_end > end:
+        fields["send_window_end"] = (
+            "The send window must fall inside the authorization window."
+        )
+
     count = target_count(db, group.id)
     if count < org.min_group_size:
         fields["target_count"] = (
             f"Reports need at least {org.min_group_size} recipients; this group "
             f"has {count}."
         )
+    if count > 0 and rate_cap > 0:
+        last_send = estimated_last_send(send_time, count, rate_cap)
+        if last_send > window_end:
+            fields["send_window_end"] = (
+                "The send window is too short for this group at the selected "
+                "rate cap."
+            )
 
     if fields:
         raise CampaignValidationError(fields)
@@ -275,6 +343,9 @@ def prepare_authorization_scope(
         "target_count": count,
         "sending_domain": campaign.sending_domain,
         "scheduled_send_time": send_time,
+        "send_window_start": window_start,
+        "send_window_end": window_end,
+        "rate_cap_per_hour": rate_cap,
         "start_date": start,
         "end_date": end,
     }
@@ -324,6 +395,9 @@ def request_authorization(
         target_count=scope["target_count"],
         sending_domain=scope["sending_domain"],
         scheduled_send_time=scope["scheduled_send_time"],
+        send_window_start=scope["send_window_start"],
+        send_window_end=scope["send_window_end"],
+        rate_cap_per_hour=scope["rate_cap_per_hour"],
         start_date=scope["start_date"],
         end_date=scope["end_date"],
         status=AuthorizationStatus.REQUESTED,
@@ -332,6 +406,10 @@ def request_authorization(
     db.add(auth)
     campaign.status = CampaignStatus.PENDING_AUTHORIZATION
     campaign.template_version = scope["template_version"]
+    if campaign.send_window_start is None:
+        campaign.send_window_start = scope["send_window_start"]
+    if campaign.send_window_end is None:
+        campaign.send_window_end = scope["send_window_end"]
     db.add(campaign)
     db.flush()
     return auth
@@ -439,6 +517,23 @@ def scope_mismatches(
         auth.scheduled_send_time
     ):
         problems["send_time"] = "The campaign send date changed after approval."
+    campaign_start, campaign_end = effective_window(campaign)
+    auth_start = (
+        ensure_utc(auth.send_window_start)
+        if auth.send_window_start is not None
+        else ensure_utc(auth.scheduled_send_time)
+    )
+    auth_end = (
+        ensure_utc(auth.send_window_end)
+        if auth.send_window_end is not None
+        else ensure_utc(auth.end_date)
+    )
+    if campaign_start != auth_start or campaign_end != auth_end:
+        problems["send_window"] = "The campaign send window changed after approval."
+    if effective_rate_cap(campaign) != (auth.rate_cap_per_hour or 60):
+        problems["rate_cap_per_hour"] = (
+            "The campaign rate cap changed after approval."
+        )
     current = target_count(db, campaign.group_id)
     if current != auth.target_count:
         problems["target_count"] = (
@@ -451,7 +546,11 @@ def launch_blockers(
     db: Session, org: Organization, campaign: Campaign
 ) -> dict[str, str]:
     problems: dict[str, str] = {}
-    if campaign.status not in (CampaignStatus.APPROVED, CampaignStatus.SCHEDULED):
+    if campaign.status not in (
+        CampaignStatus.APPROVED,
+        CampaignStatus.SCHEDULED,
+        CampaignStatus.PAUSED,
+    ):
         if campaign.status == CampaignStatus.RUNNING:
             problems["status"] = "The campaign is already running."
         else:

@@ -42,6 +42,9 @@ interface Authorization {
   target_count: number;
   sending_domain: string;
   scheduled_send_time: string;
+  send_window_start: string | null;
+  send_window_end: string | null;
+  rate_cap_per_hour: number | null;
   start_date: string;
   end_date: string;
   requested_at: string | null;
@@ -59,6 +62,9 @@ interface Campaign {
   group_name: string | null;
   target_count: number;
   send_time: string | null;
+  send_window_start: string | null;
+  send_window_end: string | null;
+  rate_cap_per_hour: number;
   sending_domain: string;
   status: CampaignStatus;
   created_by_email: string | null;
@@ -244,6 +250,9 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
   const [templateId, setTemplateId] = useState('');
   const [groupId, setGroupId] = useState('');
   const [sendTime, setSendTime] = useState('');
+  const [sendWindowStart, setSendWindowStart] = useState('');
+  const [sendWindowEnd, setSendWindowEnd] = useState('');
+  const [rateCap, setRateCap] = useState('60');
   const [sendingDomain, setSendingDomain] = useState('');
 
   const [testRecipient, setTestRecipient] = useState('sandbox@example.test');
@@ -256,6 +265,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
   const [confirming, setConfirming] = useState(false);
   const [launching, setLaunching] = useState(false);
   const [pausing, setPausing] = useState(false);
+  const [resuming, setResuming] = useState(false);
 
   const [approvals, setApprovals] = useState<Authorization[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
@@ -361,6 +371,9 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setTemplateId(campaign.template_id ?? '');
       setGroupId(campaign.group_id ?? '');
       setSendTime(toLocalInput(campaign.send_time));
+      setSendWindowStart(toLocalInput(campaign.send_window_start));
+      setSendWindowEnd(toLocalInput(campaign.send_window_end));
+      setRateCap(String(campaign.rate_cap_per_hour ?? 60));
       setSendingDomain(campaign.sending_domain);
       setStep((current) => {
         if (current !== 0) {
@@ -421,11 +434,33 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
     if ((iso || null) !== campaign.send_time) {
       patch.send_time = iso;
     }
+    const windowStart = toIso(sendWindowStart);
+    if ((windowStart || null) !== campaign.send_window_start) {
+      patch.send_window_start = windowStart;
+    }
+    const windowEnd = toIso(sendWindowEnd);
+    if ((windowEnd || null) !== campaign.send_window_end) {
+      patch.send_window_end = windowEnd;
+    }
+    const parsedRate = rateCap === '' ? 60 : Number(rateCap);
+    if (parsedRate !== campaign.rate_cap_per_hour) {
+      patch.rate_cap_per_hour = parsedRate;
+    }
     if ((sendingDomain || '') !== campaign.sending_domain) {
       patch.sending_domain = sendingDomain;
     }
     return patch;
-  }, [name, description, templateId, groupId, sendTime, sendingDomain]);
+  }, [
+    name,
+    description,
+    templateId,
+    groupId,
+    sendTime,
+    sendWindowStart,
+    sendWindowEnd,
+    rateCap,
+    sendingDomain,
+  ]);
 
   const persistDraft = useCallback(async (): Promise<Campaign | null> => {
     const campaign = detailRef.current;
@@ -507,6 +542,9 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDescription(data.campaign.description ?? '');
       setSendingDomain(data.campaign.sending_domain);
       setSendTime('');
+      setSendWindowStart('');
+      setSendWindowEnd('');
+      setRateCap('60');
       setTemplateId('');
       setGroupId('');
       setStep(0);
@@ -637,6 +675,33 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setActionError(en.campaigns.genericError);
     } finally {
       setPausing(false);
+    }
+  }
+
+  async function onResume() {
+    if (!detail || resuming) {
+      return;
+    }
+    setResuming(true);
+    setActionError('');
+    try {
+      const res = await apiRequest(`/api/v1/campaigns/${detail.id}/resume`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        setActionError(await errorMessage(res));
+        return;
+      }
+      const data = (await res.json()) as { campaign: Campaign };
+      setDetail(data.campaign);
+      detailRef.current = data.campaign;
+      setNotice(en.campaigns.noticeResumed);
+      await loadCampaigns();
+    } catch {
+      setActionError(en.campaigns.genericError);
+    } finally {
+      setResuming(false);
     }
   }
 
@@ -1200,6 +1265,62 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                           />
                         </div>
                         <div>
+                          <Label htmlFor="campaign-window-start">
+                            {en.campaigns.sendWindowStartLabel}
+                          </Label>
+                          <Input
+                            id="campaign-window-start"
+                            type="datetime-local"
+                            className="mt-1"
+                            value={sendWindowStart}
+                            disabled={!canEdit}
+                            onChange={(event) => setSendWindowStart(event.target.value)}
+                            aria-describedby="campaign-window-help"
+                            data-testid="campaign-window-start"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="campaign-window-end">
+                            {en.campaigns.sendWindowEndLabel}
+                          </Label>
+                          <Input
+                            id="campaign-window-end"
+                            type="datetime-local"
+                            className="mt-1"
+                            value={sendWindowEnd}
+                            disabled={!canEdit}
+                            onChange={(event) => setSendWindowEnd(event.target.value)}
+                            aria-describedby="campaign-window-help"
+                            data-testid="campaign-window-end"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="campaign-rate-cap">
+                            {en.campaigns.rateCapLabel}
+                          </Label>
+                          <Input
+                            id="campaign-rate-cap"
+                            type="number"
+                            min={1}
+                            max={1000}
+                            step={1}
+                            className="mt-1"
+                            value={rateCap}
+                            disabled={!canEdit}
+                            onChange={(event) => setRateCap(event.target.value)}
+                            aria-describedby="campaign-rate-help"
+                            data-testid="campaign-rate-cap"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <p id="campaign-window-help" className="text-xs text-muted-foreground">
+                            {en.campaigns.sendWindowHelp}
+                          </p>
+                          <p id="campaign-rate-help" className="mt-1 text-xs text-muted-foreground">
+                            {en.campaigns.rateCapHelp}
+                          </p>
+                        </div>
+                        <div>
                           <Label htmlFor="campaign-domain">
                             {en.campaigns.sendingDomainLabel}
                           </Label>
@@ -1266,6 +1387,24 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                             {en.campaigns.reviewSendTime}
                           </dt>
                           <dd className="mt-1 text-sm">{dateLabel(toIso(sendTime))}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {en.campaigns.reviewSendWindow}
+                          </dt>
+                          <dd className="mt-1 text-sm">
+                            {sendWindowStart || sendWindowEnd
+                              ? `${dateLabel(toIso(sendWindowStart))} – ${dateLabel(toIso(sendWindowEnd))}`
+                              : en.app.dash}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {en.campaigns.reviewRateCap}
+                          </dt>
+                          <dd className="mt-1 text-sm">
+                            {rateCap || '60'} / h
+                          </dd>
                         </div>
                         <div>
                           <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1455,6 +1594,18 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                             data-testid="pause-campaign"
                           >
                             {en.campaigns.pauseCampaign}
+                          </Button>
+                        )}
+                        {detail.status === 'paused' && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={resuming}
+                            aria-busy={resuming}
+                            onClick={() => void onResume()}
+                            data-testid="resume-campaign"
+                          >
+                            {resuming ? en.campaigns.resuming : en.campaigns.resumeCampaign}
                           </Button>
                         )}
                         {!['completed', 'cancelled'].includes(detail.status) && (

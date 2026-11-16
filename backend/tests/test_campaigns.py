@@ -204,11 +204,11 @@ def test_migration_0006_is_single_head_and_tables_exist(db_session):
     config = Config(str(backend_dir / "alembic.ini"))
     config.set_main_option("script_location", str(backend_dir / "alembic"))
     assert ScriptDirectory.from_config(config).get_heads() == [
-        "0006_campaigns_authorizations"
+        "0007_campaign_scheduling"
     ]
 
     revision = db_session.execute(text("select version_num from alembic_version")).scalar()
-    assert revision == "0006_campaigns_authorizations"
+    assert revision == "0007_campaign_scheduling"
     assert db_session.execute(text("select to_regclass('campaigns')")).scalar()
     assert db_session.execute(text("select to_regclass('authorizations')")).scalar()
 

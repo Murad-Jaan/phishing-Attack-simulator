@@ -3,6 +3,8 @@ from app.models.campaign import (
     Authorization,
     AuthorizationStatus,
     Campaign,
+    CampaignSend,
+    CampaignSendStatus,
     CampaignStatus,
 )
 from app.models.base import Base, TimestampMixin
@@ -23,6 +25,8 @@ __all__ = [
     "Authorization",
     "AuthorizationStatus",
     "Campaign",
+    "CampaignSend",
+    "CampaignSendStatus",
     "CampaignStatus",
     "AuthSession",
     "Base",

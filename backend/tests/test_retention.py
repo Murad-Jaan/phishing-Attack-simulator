@@ -5,11 +5,22 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models import AuditLog, AuthSession, Organization, User, UserRole
+from app.models import (
+    AuditLog,
+    AuthSession,
+    Campaign,
+    CampaignSend,
+    CampaignSendStatus,
+    CampaignStatus,
+    Organization,
+    Target,
+    User,
+    UserRole,
+)
 from app.services import session_service
 from app.worker import tasks
 from tests.conftest import login_as
@@ -131,7 +142,7 @@ def test_preview_counts_only_old_sessions_for_admin_org_and_deletes_nothing(
     response = client_factory.get(PREVIEW_URL)
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"scopes": {"sessions": 2}}
+    assert response.json() == {"scopes": {"sessions": 2, "campaign_sends": 0}}
     assert _session_count(db_session) == before
     assert len(_retention_audit_rows(db_session)) == audit_before
     assert db_session.get(AuthSession, old_expired.id) is not None
@@ -187,7 +198,7 @@ def test_dry_run_task_deletes_nothing_and_writes_no_audit(
     audit_before = len(_retention_audit_rows(db_session))
     result = tasks.retention_run.run(dry_run=True, org_id=str(organization.id))
 
-    assert result == {"dry_run": True, "counts": {"sessions": 2}}
+    assert result == {"dry_run": True, "counts": {"sessions": 2, "campaign_sends": 0}}
     assert _session_count(db_session) == before
     assert len(_retention_audit_rows(db_session)) == audit_before
     assert db_session.get(AuthSession, old_expired.id) is not None
@@ -218,7 +229,7 @@ def test_forced_run_deletes_only_old_expired_or_revoked_sessions_and_audits_once
         dry_run=False, force=True, org_id=str(organization.id)
     )
 
-    assert result == {"dry_run": False, "counts": {"sessions": 2}}
+    assert result == {"dry_run": False, "counts": {"sessions": 2, "campaign_sends": 0}}
     db_session.expire_all()
     assert db_session.get(AuthSession, old_expired_id) is None
     assert db_session.get(AuthSession, old_revoked_id) is None
@@ -235,7 +246,7 @@ def test_forced_run_deletes_only_old_expired_or_revoked_sessions_and_audits_once
     assert row.action == "retention.run"
     assert row.entity_type == "retention"
     assert row.before is None
-    assert row.after == {"sessions": 2}
+    assert row.after == {"sessions": 2, "campaign_sends": 0}
     assert row.reason == "system"
     assert "token" not in str(row.after).lower()
     assert "hash" not in str(row.after).lower()
@@ -250,17 +261,17 @@ def test_second_forced_run_deletes_zero_and_writes_zero_count_audit(
     first = tasks.retention_run.run(
         dry_run=False, force=True, org_id=str(organization.id)
     )
-    assert first == {"dry_run": False, "counts": {"sessions": 2}}
+    assert first == {"dry_run": False, "counts": {"sessions": 2, "campaign_sends": 0}}
     assert len(_retention_audit_rows(db_session)) == 1
 
     second = tasks.retention_run.run(
         dry_run=False, force=True, org_id=str(organization.id)
     )
 
-    assert second == {"dry_run": False, "counts": {"sessions": 0}}
+    assert second == {"dry_run": False, "counts": {"sessions": 0, "campaign_sends": 0}}
     rows = _retention_audit_rows(db_session)
     assert len(rows) == 2
-    assert rows[1].after == {"sessions": 0}
+    assert rows[1].after == {"sessions": 0, "campaign_sends": 0}
     assert rows[1].actor_user_id is None
     assert rows[1].reason == "system"
 
@@ -273,3 +284,66 @@ def test_task_refuses_destructive_run_without_force(monkeypatch):
 
     with pytest.raises(ValueError, match="force=True"):
         tasks.retention_run.run(dry_run=False)
+
+
+def test_retention_deletes_only_old_campaign_sends(
+    db_session, monkeypatch, user_factory, organization
+):
+    now = datetime.now(timezone.utc)
+    target = Target(
+        org_id=organization.id,
+        email="retention-target-send@example.test",
+        display_name="Send Target",
+    )
+    recent_target = Target(
+        org_id=organization.id,
+        email="retention-recent-send@example.test",
+        display_name="Recent Send Target",
+    )
+    db_session.add_all([target, recent_target])
+    campaign = Campaign(
+        org_id=organization.id,
+        name="Retention campaign",
+        sending_domain="example.test",
+        rate_cap_per_hour=60,
+        status=CampaignStatus.COMPLETED,
+        send_time=now - timedelta(days=400),
+    )
+    db_session.add(campaign)
+    db_session.flush()
+    old = CampaignSend(
+        org_id=organization.id,
+        campaign_id=campaign.id,
+        target_id=target.id,
+        scheduled_for=now - timedelta(days=400),
+        status=CampaignSendStatus.SENT.value,
+    )
+    recent = CampaignSend(
+        org_id=organization.id,
+        campaign_id=campaign.id,
+        target_id=recent_target.id,
+        scheduled_for=now,
+        status=CampaignSendStatus.QUEUED.value,
+    )
+    db_session.add_all([old, recent])
+    db_session.flush()
+    old_id, recent_id = old.id, recent.id
+    db_session.execute(
+        text(
+            "UPDATE campaign_sends SET created_at = :created_at WHERE id = :id"
+        ),
+        {"created_at": now - timedelta(days=400), "id": old_id},
+    )
+    db_session.commit()
+    _patch_task_session(monkeypatch, db_session)
+
+    preview_counts = tasks.retention_run.run(dry_run=True, org_id=str(organization.id))
+    assert preview_counts["counts"]["campaign_sends"] == 1
+
+    result = tasks.retention_run.run(
+        dry_run=False, force=True, org_id=str(organization.id)
+    )
+    assert result["counts"]["campaign_sends"] == 1
+    db_session.expire_all()
+    assert db_session.get(CampaignSend, old_id) is None
+    assert db_session.get(CampaignSend, recent_id) is not None

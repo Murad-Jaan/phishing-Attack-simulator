@@ -138,3 +138,55 @@ def test_org_settings_defaults(db_session: Session) -> None:
     assert "'UTC'" in defaults["timezone"]
     assert "90" in defaults["retention_days"]
     assert "5" in defaults["min_group_size"]
+
+
+def test_campaign_scheduling_schema_and_single_head(db_session: Session) -> None:
+    from sqlalchemy import inspect
+
+    head = ScriptDirectory.from_config(_alembic_config()).get_current_head()
+    assert head == "0007_campaign_scheduling"
+
+    columns = {
+        column["name"]
+        for column in inspect(db_session.get_bind()).get_columns("campaigns")
+    }
+    assert {"send_window_start", "send_window_end", "rate_cap_per_hour"}.issubset(
+        columns
+    )
+    authorization_columns = {
+        column["name"]
+        for column in inspect(db_session.get_bind()).get_columns("authorizations")
+    }
+    assert {
+        "send_window_start",
+        "send_window_end",
+        "rate_cap_per_hour",
+    }.issubset(authorization_columns)
+
+    send_columns = {
+        column["name"]
+        for column in inspect(db_session.get_bind()).get_columns("campaign_sends")
+    }
+    assert {
+        "id",
+        "org_id",
+        "campaign_id",
+        "target_id",
+        "scheduled_for",
+        "sent_at",
+        "status",
+        "failure_code",
+    }.issubset(send_columns)
+    constraints = set(
+        db_session.execute(
+            text(
+                """
+                SELECT conname
+                FROM pg_constraint
+                WHERE conrelid = 'campaign_sends'::regclass
+                """
+            )
+        ).scalars()
+    )
+    assert "uq_campaign_sends_campaign_target" in constraints
+    assert "ck_campaign_sends_status" in constraints

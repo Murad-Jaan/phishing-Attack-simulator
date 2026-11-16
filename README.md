@@ -62,6 +62,7 @@ The legacy GitHub Pages URL changes when the demo workflow is enabled. Until the
 - [`docs/assumptions.md`](docs/assumptions.md) — defaults and decisions needed
 - [`docs/evaluation-plan.md`](docs/evaluation-plan.md) — human, detector and SUS evaluation
 - [`docs/phase-2-checklist.md`](docs/phase-2-checklist.md) — next-phase entry criteria and tasks
+- [`docs/runbook.md`](docs/runbook.md) — start/stop, migrations, scheduling, retention and troubleshooting
 
 ## Safety, security and privacy rules
 

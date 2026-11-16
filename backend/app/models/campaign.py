@@ -11,6 +11,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -46,12 +47,29 @@ def _enum(values: type[enum.Enum], name: str) -> SAEnum:
     )
 
 
+class CampaignSendStatus(str, enum.Enum):
+    QUEUED = "queued"
+    SENT = "sent"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 class Campaign(Base, TimestampMixin):
     __tablename__ = "campaigns"
     __table_args__ = (
         CheckConstraint(
             "template_version IS NULL OR template_version >= 1",
             name="ck_campaigns_template_version_positive",
+        ),
+        CheckConstraint(
+            "rate_cap_per_hour >= 1 AND rate_cap_per_hour <= 1000",
+            name="ck_campaigns_rate_cap_positive",
+        ),
+        CheckConstraint(
+            "send_window_start IS NULL OR send_window_end IS NULL OR "
+            "send_window_end > send_window_start",
+            name="ck_campaigns_send_window_order",
         ),
         Index("ix_campaigns_org_updated", "org_id", "updated_at"),
         Index("ix_campaigns_org_status", "org_id", "status"),
@@ -82,6 +100,15 @@ class Campaign(Base, TimestampMixin):
     )
     send_time: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    send_window_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    send_window_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    rate_cap_per_hour: Mapped[int] = mapped_column(
+        Integer, server_default=text("60"), nullable=False
     )
     sending_domain: Mapped[str] = mapped_column(String(253), nullable=False)
     status: Mapped[CampaignStatus] = mapped_column(
@@ -151,6 +178,13 @@ class Authorization(Base, TimestampMixin):
     scheduled_send_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+    send_window_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    send_window_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    rate_cap_per_hour: Mapped[int | None] = mapped_column(Integer, nullable=True)
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[AuthorizationStatus] = mapped_column(
@@ -165,3 +199,60 @@ class Authorization(Base, TimestampMixin):
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class CampaignSend(Base, TimestampMixin):
+    """One idempotent delivery row per campaign/target pair."""
+
+    __tablename__ = "campaign_sends"
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id", "target_id", name="uq_campaign_sends_campaign_target"
+        ),
+        CheckConstraint(
+            "status IN ('queued', 'sent', 'skipped', 'failed', 'cancelled')",
+            name="ck_campaign_sends_status",
+        ),
+        Index(
+            "ix_campaign_sends_org_status_scheduled",
+            "org_id",
+            "status",
+            "scheduled_for",
+        ),
+        Index(
+            "ix_campaign_sends_campaign_status_scheduled",
+            "campaign_id",
+            "status",
+            "scheduled_for",
+        ),
+        Index("ix_campaign_sends_target", "target_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    campaign_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    target_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("targets.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scheduled_for: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), server_default=text("'queued'"), nullable=False
+    )
+    failure_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
