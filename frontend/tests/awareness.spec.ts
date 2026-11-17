@@ -6,7 +6,21 @@ import { storageStatePath, switchDemoAdmin } from './support/auth';
 test.use({ storageState: storageStatePath('admin1') });
 test.setTimeout(300_000);
 
-const MAILPIT_URL = process.env.MAILPIT_URL || 'http://mailpit:8025';
+function resolveMailpitUrl(): string {
+  const raw = process.env.MAILPIT_URL ?? 'http://127.0.0.1:8025';
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`MAILPIT_URL is not a valid URL: ${raw}`);
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error(`MAILPIT_URL must use http or https: ${raw}`);
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
+const MAILPIT_URL = resolveMailpitUrl();
 
 function futureMinuteInput(secondsFromNow: number): string {
   return new Date(Date.now() + secondsFromNow * 1000)
