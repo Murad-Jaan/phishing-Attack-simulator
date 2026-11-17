@@ -403,6 +403,18 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
   }, [loadCampaigns, loadOptions, loadApprovals]);
 
   useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        void loadOptions();
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [loadOptions]);
+
+  useEffect(() => {
     selectedIdRef.current = selectedId;
     if (selectedId) {
       setStep(0);
@@ -1220,6 +1232,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                           value={groupId}
                           disabled={!canEdit}
                           onChange={(event) => setGroupId(event.target.value)}
+                          onFocus={() => void loadOptions()}
                           data-testid="campaign-group"
                         >
                           <option value="">{en.campaigns.groupPlaceholder}</option>

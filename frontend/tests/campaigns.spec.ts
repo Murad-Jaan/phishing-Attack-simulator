@@ -63,11 +63,19 @@ async function createDraft(page: Page, name: string): Promise<void> {
   await expect(page.getByTestId('campaign-detail')).toContainText(name);
 }
 
-async function fillWizard(page: Page, groupId: string): Promise<void> {
+async function fillWizard(
+  page: Page,
+  groupId: string,
+  groupName: string,
+): Promise<void> {
   await page.getByTestId('campaign-template').selectOption({ index: 1 });
   await page.getByTestId('wizard-next').click();
 
-  await page.getByTestId('campaign-group').selectOption(groupId);
+  const groupSelect = page.getByTestId('campaign-group');
+  const groupOption = groupSelect.locator('option').filter({ hasText: groupName });
+  await expect(groupOption).toHaveCount(1);
+  await expect(groupOption).toHaveAttribute('value', groupId);
+  await groupSelect.selectOption(groupId);
   await page.getByTestId('wizard-next').click();
 
   await page.getByTestId('campaign-send-time').fill(futureLocalInput(3));
@@ -119,8 +127,9 @@ test.describe('Campaigns', () => {
 
     await page.goto('/campaigns');
     const groupId = await seedGroup(page, groupName, 5);
+    await page.reload();
     await createDraft(page, campaignName);
-    await fillWizard(page, groupId);
+    await fillWizard(page, groupId, groupName);
 
     await page.getByTestId('test-send-recipient').fill('sandbox@example.test');
     await page.getByTestId('test-send').click();
@@ -161,6 +170,41 @@ test.describe('Campaigns', () => {
     await page.getByTestId('confirm-launch').click();
     await expect(page.getByTestId('campaign-status')).toHaveText(/Scheduled|Running/);
     await expect(page.getByText('Campaign launched.')).toBeVisible();
+  });
+
+  test('group options refresh when the select is focused or the page becomes visible again', async ({
+    page,
+  }: any) => {
+    const stamp = Date.now();
+    await page.goto('/campaigns');
+    await createDraft(page, `M5 options refresh ${stamp}`);
+    await page.getByTestId('campaign-template').selectOption({ index: 1 });
+    await page.getByTestId('wizard-next').click();
+
+    const groupSelect = page.getByTestId('campaign-group');
+    await expect(groupSelect).toBeVisible();
+
+    const focusGroupName = `M5 focus group ${stamp}`;
+    const focusGroupId = await seedGroup(page, focusGroupName, 1);
+    const focusOption = groupSelect.locator('option').filter({ hasText: focusGroupName });
+    await expect(focusOption).toHaveCount(0);
+
+    await groupSelect.focus();
+    await expect(focusOption).toHaveCount(1);
+    await expect(focusOption).toHaveAttribute('value', focusGroupId);
+    await groupSelect.selectOption(focusGroupId);
+    await expect(groupSelect).toHaveValue(focusGroupId);
+
+    const visibleGroupName = `M5 visible group ${stamp}`;
+    const visibleGroupId = await seedGroup(page, visibleGroupName, 1);
+    const visibleOption = groupSelect.locator('option').filter({ hasText: visibleGroupName });
+    await expect(visibleOption).toHaveCount(0);
+
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await expect(visibleOption).toHaveCount(1);
+    await expect(visibleOption).toHaveAttribute('value', visibleGroupId);
   });
 
   test('campaign creator has no serious or critical axe issues in light mode', async ({
