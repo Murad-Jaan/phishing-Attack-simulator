@@ -144,7 +144,7 @@ def test_campaign_scheduling_schema_and_single_head(db_session: Session) -> None
     from sqlalchemy import inspect
 
     head = ScriptDirectory.from_config(_alembic_config()).get_current_head()
-    assert head == "0007_campaign_scheduling"
+    assert head == "0008_tracking_events"
 
     columns = {
         column["name"]

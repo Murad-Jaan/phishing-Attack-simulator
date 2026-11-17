@@ -6,6 +6,7 @@ from app.api.v1 import settings as settings_router
 from app.api.v1 import groups as groups_router
 from app.api.v1 import templates as templates_router
 from app.api.v1 import campaigns as campaigns_router
+from app.api.v1 import tracking as tracking_router
 from app.api.v1 import audit
 from app.core.csp import build_csp
 from app.core.errors import generic_exception_handler, validation_exception_handler, http_exception_handler
@@ -73,4 +74,5 @@ app.include_router(settings_router.router)
 app.include_router(groups_router.router)
 app.include_router(templates_router.router)
 app.include_router(campaigns_router.router)
+app.include_router(tracking_router.router)
 app.include_router(audit.router)

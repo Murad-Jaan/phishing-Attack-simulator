@@ -25,8 +25,9 @@ from app.models.campaign import (
 )
 from app.models.group import Group
 from app.models.organization import Organization
+from app.models.target import Target
 from app.models.template import Template, TemplateStatus
-from app.services import campaign_service
+from app.services import campaign_service, scheduling_service, tracking_service
 
 router = APIRouter()
 
@@ -593,6 +594,35 @@ async def reject_authorization(
     return {"authorization": campaign_service.serialize_authorization(db, auth)}
 
 
+def _prepare_delivery(db: Session, campaign: Campaign, request: Request) -> None:
+    base = tracking_service.base_from_request(request)
+    if base:
+        campaign.tracking_base_url = base
+        db.add(campaign)
+    tracking_service.ensure_tracking_links(db, campaign)
+    scheduling_service.ensure_send_rows(db, campaign)
+
+
+def _enqueue_delivery(campaign: Campaign) -> None:
+    """Wake the Celery dispatcher near the send time; beat remains the fallback."""
+    if campaign.send_time is None:
+        return
+    delay = (
+        campaign_service.ensure_utc(campaign.send_time)
+        - campaign_service.utcnow()
+    ).total_seconds()
+    if delay > 3600:
+        return
+    try:
+        from app.worker.tasks import dispatch_due
+
+        dispatch_due.apply_async(
+            args=[str(campaign.id)], countdown=max(0.0, delay)
+        )
+    except Exception:
+        pass
+
+
 @router.post("/api/v1/campaigns/{campaign_id}/launch")
 async def launch_campaign(
     campaign_id: str,
@@ -615,6 +645,7 @@ async def launch_campaign(
             "This campaign cannot be launched yet.",
             problems,
         )
+    _prepare_delivery(db, campaign, request)
     window_start, _ = campaign_service.effective_window(campaign)
     campaign.status = (
         CampaignStatus.SCHEDULED
@@ -634,12 +665,17 @@ async def launch_campaign(
         after={"status": campaign.status.value},
     )
     db.commit()
+    _enqueue_delivery(campaign)
     return {"campaign": campaign_service.serialize_campaign(db, campaign)}
 
 
 def _activate_campaign(
     campaign: Campaign, request: Request, db: Session, user, action: str
 ) -> dict[str, Any]:
+    base = tracking_service.base_from_request(request)
+    if base:
+        campaign.tracking_base_url = base
+        db.add(campaign)
     window_start, _ = campaign_service.effective_window(campaign)
     campaign.status = (
         CampaignStatus.SCHEDULED
@@ -659,6 +695,7 @@ def _activate_campaign(
         after={"status": campaign.status.value},
     )
     db.commit()
+    _enqueue_delivery(campaign)
     return {"campaign": campaign_service.serialize_campaign(db, campaign)}
 
 
@@ -831,6 +868,41 @@ async def cancel_campaign(
     )
     db.commit()
     return {"campaign": campaign_service.serialize_campaign(db, campaign)}
+
+
+@router.get("/api/v1/campaigns/{campaign_id}/sends")
+@router.get("/campaigns/{campaign_id}/sends")
+def list_campaign_sends(
+    campaign_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_staff),
+):
+    campaign = _get_campaign(db, user.org_id, campaign_id)
+    if campaign is None:
+        return _error(request, 404, "not_found", "Campaign not found")
+    rows = db.execute(
+        select(CampaignSend, Target)
+        .join(Target, Target.id == CampaignSend.target_id)
+        .where(
+            CampaignSend.campaign_id == campaign.id,
+            CampaignSend.org_id == user.org_id,
+        )
+        .order_by(Target.email.asc(), CampaignSend.id.asc())
+    ).all()
+    return {
+        "sends": [
+            {
+                "target_id": str(row.target_id),
+                "email": target.email,
+                "status": row.status,
+                "scheduled_for": row.scheduled_for.isoformat(),
+                "sent_at": row.sent_at.isoformat() if row.sent_at else None,
+                "failure_code": row.failure_code,
+            }
+            for row, target in rows
+        ]
+    }
 
 
 @router.post("/api/v1/campaigns/{campaign_id}/test-send")

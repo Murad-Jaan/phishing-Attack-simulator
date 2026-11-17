@@ -111,6 +111,7 @@ class Campaign(Base, TimestampMixin):
         Integer, server_default=text("60"), nullable=False
     )
     sending_domain: Mapped[str] = mapped_column(String(253), nullable=False)
+    tracking_base_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
     status: Mapped[CampaignStatus] = mapped_column(
         _enum(CampaignStatus, "campaign_status"),
         server_default=text("'draft'"),

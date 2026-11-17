@@ -28,7 +28,8 @@ from app.models.group import GroupMember
 from app.models.organization import Organization
 from app.models.target import Target
 from app.models.template import Template
-from app.services import campaign_service
+from app.models.tracking import TrackingLink
+from app.services import campaign_service, tracking_service
 
 
 def utcnow() -> datetime:
@@ -201,6 +202,13 @@ def dispatch_campaign(
         return {"campaign_id": str(campaign.id), "sent": 0, "status": "blocked"}
 
     ensure_send_rows(db, campaign)
+    tracking_service.ensure_tracking_links(db, campaign)
+    links = {
+        link.target_id: link
+        for link in db.execute(
+            select(TrackingLink).where(TrackingLink.campaign_id == campaign.id)
+        ).scalars()
+    }
 
     rate_cap = campaign_service.effective_rate_cap(campaign)
     sent_last_hour = int(
@@ -239,11 +247,26 @@ def dispatch_campaign(
             row.failure_code = "target_missing"
             db.add(row)
             continue
+        link = links.get(target.id)
+        if link is None:
+            row.status = CampaignSendStatus.FAILED.value
+            row.failure_code = "tracking_missing"
+            failed += 1
+            db.add(row)
+            continue
         first_name = (target.display_name or "there").split()[0]
-        subject = campaign_service._fill_placeholders(template.subject, first_name)
-        body = campaign_service._fill_placeholders(template.body, first_name)
+        tracking_link = tracking_service.tracking_url(campaign, link.token)
+        subject = campaign_service._fill_placeholders(
+            template.subject, first_name, tracking_link
+        )
+        body = campaign_service._fill_placeholders(
+            template.body, first_name, tracking_link
+        )
+        html_body = mail.body_to_html(body, tracking_link)
         try:
-            mail.send_mail_sandbox(target.email, subject, body)
+            mail.send_mail_sandbox(
+                target.email, subject, body, html_body=html_body
+            )
         except Exception:
             row.status = CampaignSendStatus.FAILED.value
             row.failure_code = "delivery_failed"
@@ -251,6 +274,7 @@ def dispatch_campaign(
         else:
             row.status = CampaignSendStatus.SENT.value
             row.sent_at = reference
+            tracking_service.record_delivered(db, link)
             sent += 1
         db.add(row)
 

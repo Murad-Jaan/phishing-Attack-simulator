@@ -599,13 +599,15 @@ def launch_blockers(
     return problems
 
 
-def _fill_placeholders(value: str, first_name: str) -> str:
+def _fill_placeholders(
+    value: str, first_name: str, tracking_link: str = DEFAULT_TRACKING_LINK
+) -> str:
     def replace(match: re.Match[str]) -> str:
         name = match.group(1)
         if name == "first_name":
             return first_name
         if name == "tracking_link":
-            return DEFAULT_TRACKING_LINK
+            return tracking_link
         return ""
 
     return _PLACEHOLDER_RE.sub(replace, value)

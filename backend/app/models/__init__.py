@@ -12,6 +12,11 @@ from app.models.group import Group, GroupMember
 from app.models.organization import Organization
 from app.models.session import AuthSession
 from app.models.target import Target
+from app.models.tracking import (
+    TrackingEvent,
+    TrackingEventType,
+    TrackingLink,
+)
 from app.models.template import (
     Template,
     TemplateDifficulty,
@@ -39,6 +44,9 @@ __all__ = [
     "TemplateStatus",
     "Target",
     "TimestampMixin",
+    "TrackingEvent",
+    "TrackingEventType",
+    "TrackingLink",
     "User",
     "UserRole",
 ]

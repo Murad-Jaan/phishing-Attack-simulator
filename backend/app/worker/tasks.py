@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Any
 
 from app.db import SessionLocal
@@ -53,12 +54,18 @@ def retention_run_scheduled() -> dict[str, Any]:
 
 
 @celery_app.task(name="campaigns.dispatch_due")
-def dispatch_due(campaign_id: str | uuid.UUID | None = None) -> dict[str, Any]:
+def dispatch_due(
+    campaign_id: str | uuid.UUID | None = None,
+    now_iso: str | None = None,
+) -> dict[str, Any]:
     """Deliver due campaign batches. Safe to run repeatedly."""
     target_id = uuid.UUID(campaign_id) if isinstance(campaign_id, str) and campaign_id else campaign_id
+    now = datetime.fromisoformat(now_iso) if now_iso else None
     with SessionLocal() as db:
         result = scheduling_service.dispatch_due(
-            db, campaign_id=target_id if isinstance(target_id, uuid.UUID) else None
+            db,
+            now=now,
+            campaign_id=target_id if isinstance(target_id, uuid.UUID) else None,
         )
         db.commit()
         return result
