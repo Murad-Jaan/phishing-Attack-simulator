@@ -1024,7 +1024,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                         className={cn(
                           'w-full rounded-lg border px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                           selected
-                            ? 'border-primary bg-primary-tint'
+                            ? 'border-primary bg-primary-tint text-primary-strong'
                             : 'border-border hover:bg-accent hover:text-accent-foreground',
                         )}
                         data-testid={`campaign-option-${campaign.id}`}

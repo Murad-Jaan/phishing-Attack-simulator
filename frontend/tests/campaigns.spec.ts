@@ -83,6 +83,32 @@ function seriousViolations(violations: { impact?: string | null }[]) {
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
 }
 
+function parseRgb(value: string): [number, number, number] {
+  const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) {
+    throw new Error(`Unexpected color value: ${value}`);
+  }
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function relativeLuminance([red, green, blue]: [number, number, number]): number {
+  const channel = (value: number) => {
+    const normalized = value / 255;
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const foregroundLuminance = relativeLuminance(parseRgb(foreground));
+  const backgroundLuminance = relativeLuminance(parseRgb(background));
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 test.describe('Campaigns', () => {
   test('happy path: draft, test send, two-admin approval and impact confirmation', async ({
     page,
@@ -156,5 +182,26 @@ test.describe('Campaigns', () => {
     await page.evaluate(() => document.documentElement.classList.add('dark'));
     const results = await new AxeBuilder({ page }).analyze();
     expect(seriousViolations(results.violations)).toEqual([]);
+  });
+
+  test('campaign creator selected option keeps dark-mode text contrast from theme tokens', async ({
+    page,
+  }: any) => {
+    const stamp = Date.now();
+    const campaignName = `M5 dark tokens ${stamp}`;
+    await page.goto('/campaigns');
+    await createDraft(page, campaignName);
+    await page.evaluate(() => document.documentElement.classList.add('dark'));
+
+    const selected = page
+      .getByTestId('campaign-list')
+      .getByRole('button', { name: new RegExp(campaignName) });
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+
+    const colors = await selected.evaluate((element: SVGElement | HTMLElement) => {
+      const style = window.getComputedStyle(element);
+      return { color: style.color, backgroundColor: style.backgroundColor };
+    });
+    expect(contrastRatio(colors.color, colors.backgroundColor)).toBeGreaterThanOrEqual(4.5);
   });
 });

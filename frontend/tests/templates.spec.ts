@@ -20,6 +20,12 @@ function criticalViolations(results: {
 test.describe('Template library', () => {
   test.use({ storageState: storageStatePath('admin1') });
 
+  test('reuses the global setup auth state without showing the login form', async ({ page }) => {
+    await page.goto('/templates');
+    await expect(page.getByTestId('template-results')).toBeVisible();
+    await expect(page.getByTestId('login-email')).toHaveCount(0);
+  });
+
   test('filters templates, previews red flags, switches viewport and closes on Escape', async ({
     page,
   }) => {
