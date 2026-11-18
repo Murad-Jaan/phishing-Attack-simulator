@@ -140,11 +140,45 @@ def test_org_settings_defaults(db_session: Session) -> None:
     assert "5" in defaults["min_group_size"]
 
 
+def test_analyzer_reports_schema_and_single_head(db_session: Session) -> None:
+    from sqlalchemy import inspect
+
+    script = ScriptDirectory.from_config(_alembic_config())
+    assert len(script.get_heads()) == 1
+    assert script.get_current_head() == "0009_analyzer_reports"
+
+    columns = {
+        column["name"]
+        for column in inspect(db_session.get_bind()).get_columns("analyzer_reports")
+    }
+    assert {
+        "id",
+        "org_id",
+        "user_id",
+        "verdict",
+        "rule_ids",
+        "created_at",
+    } == columns
+
+    constraints = set(
+        db_session.execute(
+            text(
+                """
+                SELECT conname
+                FROM pg_constraint
+                WHERE conrelid = 'analyzer_reports'::regclass
+                """
+            )
+        ).scalars()
+    )
+    assert "ck_analyzer_reports_verdict" in constraints
+
+
 def test_campaign_scheduling_schema_and_single_head(db_session: Session) -> None:
     from sqlalchemy import inspect
 
     head = ScriptDirectory.from_config(_alembic_config()).get_current_head()
-    assert head == "0008_tracking_events"
+    assert head == "0009_analyzer_reports"
 
     columns = {
         column["name"]

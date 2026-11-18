@@ -196,7 +196,7 @@ def _approved_campaign(db_session, client, organization, setup):
     return campaign_id, authorization_id
 
 
-def test_migration_0006_is_single_head_and_tables_exist(db_session):
+def test_migration_is_single_head_and_campaign_tables_exist(db_session):
     from alembic.config import Config
     from alembic.script import ScriptDirectory
 
@@ -204,11 +204,11 @@ def test_migration_0006_is_single_head_and_tables_exist(db_session):
     config = Config(str(backend_dir / "alembic.ini"))
     config.set_main_option("script_location", str(backend_dir / "alembic"))
     assert ScriptDirectory.from_config(config).get_heads() == [
-        "0008_tracking_events"
+        "0009_analyzer_reports"
     ]
 
     revision = db_session.execute(text("select version_num from alembic_version")).scalar()
-    assert revision == "0008_tracking_events"
+    assert revision == "0009_analyzer_reports"
     assert db_session.execute(text("select to_regclass('campaigns')")).scalar()
     assert db_session.execute(text("select to_regclass('authorizations')")).scalar()
 

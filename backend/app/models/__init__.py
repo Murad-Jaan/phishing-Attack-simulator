@@ -1,3 +1,4 @@
+from app.models.analyzer import AnalyzerReport
 from app.models.audit import AuditLog
 from app.models.campaign import (
     Authorization,
@@ -26,6 +27,7 @@ from app.models.template import (
 from app.models.user import User, UserRole
 
 __all__ = [
+    "AnalyzerReport",
     "AuditLog",
     "Authorization",
     "AuthorizationStatus",
