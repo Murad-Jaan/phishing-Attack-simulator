@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db import get_db
 from app.models.campaign import Campaign
+from app.models.tracking import TrackingEventType
 from app.services import tracking_service
 
 router = APIRouter()
@@ -52,6 +53,23 @@ def track_click(
     )
     location = f"{base}/learn/{quote(token, safe='')}"
     return RedirectResponse(location, status_code=302, headers=_NO_STORE)
+
+
+@router.post("/api/v1/quiz/{token}/complete")
+@router.post("/quiz/{token}/complete")
+def complete_quiz(
+    token: str,
+    db: Session = Depends(get_db),
+) -> dict[str, bool]:
+    link = tracking_service.find_link(db, token)
+    if link is None:
+        return {"completed": True, "recorded": False}
+    recorded = tracking_service.record_event(
+        db, link, TrackingEventType.QUIZ_COMPLETED
+    )
+    if recorded:
+        db.commit()
+    return {"completed": True, "recorded": recorded}
 
 
 @router.get("/api/v1/awareness/{token}")

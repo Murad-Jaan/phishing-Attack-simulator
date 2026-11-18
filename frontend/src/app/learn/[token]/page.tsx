@@ -108,17 +108,24 @@ export default async function AwarenessPage({
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <a
-            href="#training-tips"
+            href={`/learn/${encodeURIComponent(token)}/quiz`}
             className={buttonVariants({ size: 'lg' })}
-            data-testid="start-training"
+            data-testid="quiz-cta"
           >
             <GraduationCap className="h-5 w-5" aria-hidden="true" />
-            {en.awareness.startTraining}
+            {en.awareness.quizCta}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </a>
           <a
-            href="mailto:security@example.test"
+            href="#training-tips"
             className={buttonVariants({ variant: 'secondary', size: 'lg' })}
+            data-testid="start-training"
+          >
+            {en.awareness.startTraining}
+          </a>
+          <a
+            href="mailto:security@example.test"
+            className={buttonVariants({ variant: 'outline', size: 'lg' })}
             data-testid="report-link"
           >
             <Flag className="h-5 w-5" aria-hidden="true" />

@@ -34,6 +34,7 @@ export default defineConfig({
       },
   use: {
     baseURL: process.env.BASE_URL || (process.env.CI ? 'http://127.0.0.1:3000' : 'http://phishsim-web:3000'),
+    reducedMotion: 'reduce',
     trace: 'on-first-retry',
   },
   projects: [

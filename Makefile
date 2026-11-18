@@ -33,6 +33,7 @@ migrate:
 
 seed:
 	docker compose exec -T -e APP_ENV=development -e PYTHONPATH=/app api python -m app.scripts.seed_dev
+	docker compose exec -T -e APP_ENV=development -e PYTHONPATH=/app api python -m app.scripts.seed_demo
 
 unlock-user:
 	@test -n "$(EMAIL)" || { echo "ERROR: EMAIL is required (usage: make unlock-user EMAIL=<email>)"; exit 1; }

@@ -280,4 +280,93 @@ test('email link records a click, redirects to awareness, and passes axe light/d
     (violation) => violation.impact === 'serious' || violation.impact === 'critical',
   );
   expect(darkSerious).toEqual([]);
+
+  await page.evaluate(() => document.documentElement.classList.remove('dark'));
+
+  await page.getByTestId('quiz-cta').click();
+  await page.waitForURL(new RegExp(`/learn/${token}/quiz$`));
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Quick security check' }),
+  ).toBeVisible();
+
+  for (let question = 0; question < 5; question += 1) {
+    await page.getByRole('radio').first().check();
+    await expect(page.getByText('Why', { exact: true })).toBeVisible();
+    const next = page.getByTestId('quiz-next');
+    await expect(next).toBeEnabled();
+    await next.click();
+  }
+  await expect(page.getByText('Training complete').first()).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Back to the awareness page' }).first(),
+  ).toBeVisible();
+
+  const quizLight = await new AxeBuilder({ page }).analyze();
+  expect(
+    quizLight.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await page.waitForTimeout(500);
+  const quizDark = await new AxeBuilder({ page }).analyze();
+  expect(
+    quizDark.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await page.evaluate(() => document.documentElement.classList.remove('dark'));
+
+  await page.goto('/reports');
+  await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
+  const campaignSelect = page.getByTestId('reports-campaign');
+  await expect(
+    campaignSelect.locator('option').filter({ hasText: campaignName }),
+  ).toHaveCount(1);
+  await campaignSelect.selectOption({ label: campaignName });
+  await expect(page.getByTestId('report-funnel')).toBeVisible();
+  await expect(page.getByTestId('report-groups')).toContainText(groupName);
+  await expect(page.getByTestId('report-trend')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('reports-export').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('campaign-report.csv');
+
+  const reportsLight = await new AxeBuilder({ page }).analyze();
+  expect(
+    reportsLight.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await page.waitForTimeout(500);
+  const reportsDark = await new AxeBuilder({ page }).analyze();
+  expect(
+    reportsDark.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await page.evaluate(() => document.documentElement.classList.remove('dark'));
+
+  await page.goto('/');
+  await expect(page.getByTestId('dashboard-metric')).toHaveCount(4);
+  const sentMetric = page
+    .getByTestId('dashboard-metric')
+    .filter({ hasText: 'Emails sent' });
+  await expect(sentMetric).not.toContainText('—');
+  const dashboardLight = await new AxeBuilder({ page }).analyze();
+  expect(
+    dashboardLight.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await page.waitForTimeout(500);
+  const dashboardDark = await new AxeBuilder({ page }).analyze();
+  expect(
+    dashboardDark.violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
 });

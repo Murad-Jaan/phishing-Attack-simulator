@@ -181,3 +181,76 @@ def test_unlock_missing_env_fails_clearly(db_session, monkeypatch, capsys):
         unlock_user(db_session)
     assert exc.value.code == 1
     assert "EMAIL is required" in capsys.readouterr().out
+
+
+from app.models import (  # noqa: E402
+    Campaign,
+    Group,
+    GroupMember,
+    Target,
+    TrackingEvent,
+    TrackingLink,
+)
+from app.scripts.seed_demo import seed_demo  # noqa: E402
+from tests.test_campaigns import _template  # noqa: E402
+
+
+def test_seed_demo_refuses_production_env(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("ENV", "production")
+    with pytest.raises(SystemExit):
+        seed_demo(None)  # type: ignore[arg-type]
+
+
+def test_seed_demo_is_idempotent_and_creates_expected_dataset(
+    db_session, organization: Organization, monkeypatch
+):
+    monkeypatch.setenv("APP_ENV", "development")
+    monkeypatch.setenv("ENV", "development")
+    organization.slug = "demo-org"
+    organization.is_demo = True
+    db_session.commit()
+    _template(db_session, organization, name="Demo published template")
+
+    seed_demo(db_session)
+    seed_demo(db_session)
+
+    def count(model) -> int:
+        return int(
+            db_session.execute(
+                select(func.count())
+                .select_from(model)
+                .where(model.org_id == organization.id)
+            ).scalar_one()
+        )
+
+    assert count(Group) == 1
+    group_ids = select(Group.id).where(Group.org_id == organization.id)
+    member_count = db_session.execute(
+        select(func.count())
+        .select_from(GroupMember)
+        .where(GroupMember.group_id.in_(group_ids))
+    ).scalar_one()
+    assert int(member_count) == 8
+    assert count(Target) == 8
+    assert count(Campaign) == 2
+    assert count(TrackingLink) == 16
+    assert count(TrackingEvent) == 23
+
+    campaigns = list(
+        db_session.execute(
+            select(Campaign).where(Campaign.org_id == organization.id)
+        ).scalars()
+    )
+    assert {campaign.status.value for campaign in campaigns} == {
+        "completed",
+        "running",
+    }
+    assert all(
+        campaign.description and "demo" in campaign.description.lower()
+        for campaign in campaigns
+    )
+    group = db_session.execute(
+        select(Group).where(Group.org_id == organization.id)
+    ).scalar_one()
+    assert group.name == "Demo Finance Team"
