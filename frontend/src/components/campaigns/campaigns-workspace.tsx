@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/toast';
 import { en } from '@/content/en';
 import { cn } from '@/lib/utils';
 
@@ -224,6 +226,7 @@ async function errorMessage(res: Response): Promise<string> {
 }
 
 export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps) {
+  const { showToast } = useToast();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Campaign | null>(null);
@@ -272,6 +275,18 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [decidingId, setDecidingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (actionError !== '') {
+      showToast(actionError, 'error');
+    }
+  }, [actionError, showToast]);
+
+  useEffect(() => {
+    if (saveState === 'error') {
+      showToast(en.campaigns.toastAutosaveError, 'error');
+    }
+  }, [saveState, showToast]);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detailRef = useRef<Campaign | null>(null);
@@ -547,6 +562,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setNewDescription('');
       setShowCreate(false);
       setNotice(en.campaigns.noticeCreated);
+      showToast(en.campaigns.toastCreated);
       selectedIdRef.current = data.campaign.id;
       setSelectedId(data.campaign.id);
       setDetail(data.campaign);
@@ -594,6 +610,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDetail(data.campaign);
       detailRef.current = data.campaign;
       setNotice(en.campaigns.authorizationRequested);
+      showToast(en.campaigns.toastAuthorizationRequested);
       await loadCampaigns();
       await loadApprovals();
     } catch {
@@ -622,6 +639,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       }
       const data = (await res.json()) as { recipient: string };
       setTestResult(format(en.campaigns.testSendSuccess, { recipient: data.recipient }));
+      showToast(en.campaigns.toastTestSent);
     } catch {
       setTestError(en.campaigns.genericError);
     } finally {
@@ -655,6 +673,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDetail(data.campaign);
       detailRef.current = data.campaign;
       setNotice(en.campaigns.noticeLaunched);
+      showToast(en.campaigns.toastLaunched);
       await loadCampaigns();
     } catch {
       setActionError(en.campaigns.genericError);
@@ -682,6 +701,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDetail(data.campaign);
       detailRef.current = data.campaign;
       setNotice(en.campaigns.noticePaused);
+      showToast(en.campaigns.toastPaused);
       await loadCampaigns();
     } catch {
       setActionError(en.campaigns.genericError);
@@ -709,6 +729,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDetail(data.campaign);
       detailRef.current = data.campaign;
       setNotice(en.campaigns.noticeResumed);
+      showToast(en.campaigns.toastResumed);
       await loadCampaigns();
     } catch {
       setActionError(en.campaigns.genericError);
@@ -738,6 +759,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setDetail(data.campaign);
       detailRef.current = data.campaign;
       setNotice(en.campaigns.noticeCancelled);
+      showToast(en.campaigns.toastCancelled);
       await loadCampaigns();
       await loadApprovals();
     } catch {
@@ -758,6 +780,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
         return;
       }
       setNotice(en.campaigns.approvalDone);
+      showToast(en.campaigns.toastApproved);
       await loadApprovals();
       await loadCampaigns();
       if (selectedId === authorization.campaign_id) {
@@ -790,6 +813,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
       setRejectingId(null);
       setRejectReason('');
       setNotice(en.campaigns.rejectionDone);
+      showToast(en.campaigns.toastRejected);
       await loadApprovals();
       await loadCampaigns();
     } catch {
@@ -989,17 +1013,17 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit" data-testid="campaign-list">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <Card className="h-fit min-w-0" data-testid="campaign-list">
           <CardHeader>
             <CardTitle as="h2">{en.campaigns.campaignListTitle}</CardTitle>
             <CardDescription>{en.campaigns.campaignListDescription}</CardDescription>
           </CardHeader>
           <CardContent>
             {listLoading && (
-              <p role="status" className="text-sm text-muted-foreground">
-                {en.campaigns.listLoading}
-              </p>
+              <div role="status" aria-label={en.campaigns.listLoading}>
+                <SkeletonList rows={4} />
+              </div>
             )}
             {!listLoading && listError !== '' && (
               <Alert variant="danger" title={en.campaigns.listErrorTitle}>
@@ -1042,8 +1066,8 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                         data-testid={`campaign-option-${campaign.id}`}
                       >
                         <span className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-medium">{campaign.name}</span>
-                          <Badge variant={statusVariant(campaign.status)}>
+                          <span className="min-w-0 break-words font-medium">{campaign.name}</span>
+                          <Badge variant={statusVariant(campaign.status)} className="shrink-0">
                             {statusLabel(campaign.status)}
                           </Badge>
                         </span>
@@ -1060,7 +1084,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           {!selectedId && !listLoading && listError === '' && (
             <Card>
               <CardContent>
@@ -1125,7 +1149,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                               onClick={() => setStep(index)}
                               aria-current={current ? 'step' : undefined}
                               className={cn(
-                                'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                                'stepper-step flex min-h-11 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                                 current
                                   ? 'border-primary bg-primary-tint text-primary-strong'
                                   : 'border-border text-muted-foreground hover:bg-surface-muted',
@@ -1134,7 +1158,7 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                             >
                               <span
                                 className={cn(
-                                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px]',
+                                  'stepper-index flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px]',
                                   done
                                     ? 'border-success bg-success-tint text-success'
                                     : 'border-current',
@@ -1149,6 +1173,17 @@ export default function CampaignsWorkspace({ isAdmin }: CampaignsWorkspaceProps)
                         );
                       })}
                     </ol>
+                    <div
+                      aria-hidden="true"
+                      className="mt-3 h-1 overflow-hidden rounded-full bg-surface-muted"
+                    >
+                      <div
+                        className={cn(
+                          'stepper-progress h-full rounded-full bg-primary',
+                          `stepper-progress-${step}`,
+                        )}
+                      />
+                    </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {format(en.campaigns.stepLabel, {
                         current: step + 1,

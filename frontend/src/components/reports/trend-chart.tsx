@@ -73,10 +73,11 @@ export function TrendChart({ points, title, caption }: TrendChartProps) {
         <polyline
           points={polyline}
           fill="none"
+          pathLength={1}
           strokeWidth="3"
           strokeLinejoin="round"
           strokeLinecap="round"
-          className="stroke-current text-primary"
+          className="chart-line stroke-current text-primary"
         />
         {points.map((point, index) => (
           <circle

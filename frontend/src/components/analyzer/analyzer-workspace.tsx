@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/toast';
 import { en } from '@/content/en';
 import {
   AnalyzerApiError,
@@ -58,6 +59,7 @@ const METER_FILL: Record<Verdict, string> = {
 const SEGMENTS = Array.from({ length: 20 }, (_, index) => index);
 
 export function AnalyzerWorkspace() {
+  const { showToast } = useToast();
   const ids = useId();
   const [tab, setTab] = useState<Tab>('paste');
   const [sender, setSender] = useState('');
@@ -120,6 +122,7 @@ export function AnalyzerWorkspace() {
             })
           : await analyzeEml(file as File, consent, orgDomain.trim() || undefined);
       setResult(analysis);
+      showToast(en.analyzer.analysisToast);
     } catch (caught) {
       if (caught instanceof AnalyzerApiError) {
         if (caught.code === 'file_too_large') {
@@ -147,8 +150,10 @@ export function AnalyzerWorkspace() {
     try {
       await reportAnalysis(result.label, result.rule_ids);
       setReported(true);
+      showToast(en.analyzer.reportToast);
     } catch {
       setReportError(COPY.reportErrorBody);
+      showToast(COPY.reportErrorTitle, 'error');
     } finally {
       setReporting(false);
     }
@@ -374,7 +379,7 @@ export function AnalyzerWorkspace() {
                   aria-valuetext={`${VERDICT_TEXT[result.label]}, ${result.score} of 100`}
                   aria-label={COPY.scoreLabel}
                   data-testid="analyzer-meter"
-                  className="flex gap-1"
+                  className="meter-sweep flex gap-1"
                 >
                   {SEGMENTS.map((segment) => (
                     <span

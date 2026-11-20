@@ -93,7 +93,7 @@ export function GroupChart({ groups, caption }: GroupChartProps) {
                 width={clickWidth}
                 height="10"
                 rx="5"
-                className="fill-current text-primary"
+                className="chart-bar fill-current text-primary"
               >
                 <title>{`${group.name}: ${en.reports.clickRateColumn} ${formatRate(group.click_rate)}`}</title>
               </rect>
@@ -103,7 +103,7 @@ export function GroupChart({ groups, caption }: GroupChartProps) {
                 width={reportWidth}
                 height="10"
                 rx="5"
-                className="fill-current text-success"
+                className="chart-bar fill-current text-success"
               >
                 <title>{`${group.name}: ${en.reports.reportRateColumn} ${formatRate(group.report_rate)}`}</title>
               </rect>

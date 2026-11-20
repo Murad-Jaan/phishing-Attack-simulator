@@ -13,7 +13,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
+    <div className="page-transition flex min-h-dvh flex-col bg-background">
       <div className="flex justify-end px-4 py-4">
         <ThemeToggle initialTheme={theme} />
       </div>

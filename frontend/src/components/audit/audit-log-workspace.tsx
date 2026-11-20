@@ -8,6 +8,8 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/toast';
 import {
   Table,
   TableBody,
@@ -126,6 +128,7 @@ async function getCsrfToken(): Promise<string> {
 }
 
 export default function AuditLogWorkspace() {
+  const { showToast } = useToast();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [offset, setOffset] = useState(0);
@@ -214,8 +217,10 @@ export default function AuditLogWorkspace() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      showToast(en.audit.downloadToast);
     } catch {
       setExportError(en.audit.exportErrorBody);
+      showToast(en.audit.exportErrorTitle, 'error');
     } finally {
       setExporting(false);
     }
@@ -352,7 +357,9 @@ export default function AuditLogWorkspace() {
           )}
         </CardHeader>
         <CardContent>
-          {events.length === 0 && !loading && error === '' ? (
+          {loading && events.length === 0 ? (
+            <SkeletonList rows={5} />
+          ) : events.length === 0 && error === '' ? (
             <div className="py-6 text-center">
               <p className="font-semibold">{en.audit.emptyTitle}</p>
               <p className="mt-1 text-sm text-muted-foreground">{en.audit.emptyBody}</p>

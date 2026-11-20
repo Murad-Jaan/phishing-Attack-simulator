@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { SkeletonChart, SkeletonList } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/toast';
 import { en } from '@/content/en';
 import {
   campaignStatusLabel,
@@ -55,6 +57,7 @@ async function getCsrfToken(): Promise<string> {
 }
 
 export default function ReportsWorkspace() {
+  const { showToast } = useToast();
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [selected, setSelected] = useState('');
   const [data, setData] = useState<ReportData | null>(null);
@@ -152,8 +155,10 @@ export default function ReportsWorkspace() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      showToast(en.reports.downloadToast);
     } catch {
       setExportError(en.reports.exportErrorBody);
+      showToast(en.reports.exportErrorTitle, 'error');
     } finally {
       setExporting(false);
     }
@@ -239,8 +244,14 @@ export default function ReportsWorkspace() {
       ) : null}
 
       {loading ? (
-        <Card>
-          <p className="text-sm text-muted-foreground">{en.reports.loading}</p>
+        <Card aria-busy="true" data-testid="reports-loading">
+          <CardHeader>
+            <CardTitle>{en.reports.loading}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <SkeletonChart />
+            <SkeletonList rows={3} />
+          </CardContent>
         </Card>
       ) : null}
 
@@ -275,21 +286,25 @@ export default function ReportsWorkspace() {
                     label: en.reports.delivered,
                     value: String(summary.delivered),
                     rate: null,
+                    barRate: 1,
                   },
                   {
                     label: en.reports.clicked,
                     value: String(summary.clicked),
                     rate: summary.click_rate,
+                    barRate: summary.click_rate,
                   },
                   {
                     label: en.reports.reported,
                     value: String(summary.reported),
                     rate: summary.report_rate,
+                    barRate: summary.report_rate,
                   },
                   {
                     label: en.reports.quizCompleted,
                     value: String(summary.quiz_completed),
                     rate: summary.quiz_rate,
+                    barRate: summary.quiz_rate,
                   },
                 ].map((metric) => (
                   <div
@@ -307,6 +322,20 @@ export default function ReportsWorkspace() {
                         ? en.reports.rateOfDelivered
                         : formatRate(metric.rate)}
                     </p>
+                    <svg
+                      viewBox="0 0 100 8"
+                      role="img"
+                      aria-label={metric.label}
+                      className="mt-3 h-2 w-full"
+                    >
+                      <rect width="100" height="8" rx="4" className="fill-current text-border" />
+                      <rect
+                        width={Math.max(0, Math.min(1, metric.barRate)) * 100}
+                        height="8"
+                        rx="4"
+                        className="chart-bar fill-current text-primary"
+                      />
+                    </svg>
                   </div>
                 ))}
               </div>

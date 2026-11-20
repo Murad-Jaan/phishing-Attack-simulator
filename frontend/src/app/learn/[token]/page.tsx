@@ -94,19 +94,19 @@ export default async function AwarenessPage({
         tabIndex={-1}
         className="mx-auto max-w-3xl px-4 py-10 sm:py-14"
       >
-        <span className="inline-flex items-center gap-2 rounded-full border border-success-tint-border bg-success-tint px-3 py-1 text-xs font-semibold text-success">
+        <span className="awareness-enter awareness-delay-1 inline-flex items-center gap-2 rounded-full border border-success-tint-border bg-success-tint px-3 py-1 text-xs font-semibold text-success">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
           {en.awareness.badge}
         </span>
 
-        <h1 className="mt-5 text-3xl font-bold leading-10 tracking-tight text-foreground sm:text-4xl sm:leading-[48px]">
+        <h1 className="awareness-enter awareness-delay-2 mt-5 text-3xl font-bold leading-10 tracking-tight text-foreground sm:text-4xl sm:leading-[48px]">
           {en.awareness.title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+        <p className="awareness-enter awareness-delay-3 mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
           {en.awareness.description}
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-3">
+        <div className="awareness-enter awareness-delay-4 mt-8 flex flex-wrap items-center gap-3">
           <a
             href={`/learn/${encodeURIComponent(token)}/quiz`}
             className={buttonVariants({ size: 'lg' })}
@@ -133,7 +133,7 @@ export default async function AwarenessPage({
           </a>
         </div>
 
-        <Card className="mt-10">
+        <Card className="awareness-enter awareness-delay-5 mt-10">
           <h2 className="text-xl font-semibold leading-7 text-foreground">
             {en.awareness.redFlagsTitle}
           </h2>
@@ -165,7 +165,7 @@ export default async function AwarenessPage({
         <section
           id="training-tips"
           aria-labelledby="training-tips-title"
-          className="mt-10 scroll-mt-6"
+          className="awareness-enter awareness-delay-6 mt-10 scroll-mt-6"
         >
           <h2
             id="training-tips-title"
@@ -210,7 +210,7 @@ export default async function AwarenessPage({
           </div>
         </section>
 
-        <Card className="mt-10">
+        <Card className="awareness-enter awareness-delay-7 mt-10">
           <h2 className="text-lg font-semibold leading-7 text-foreground">
             {en.awareness.reportTitle}
           </h2>

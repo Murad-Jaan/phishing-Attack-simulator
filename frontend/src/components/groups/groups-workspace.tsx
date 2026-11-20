@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/toast';
 import { en } from '@/content/en';
 import { cn } from '@/lib/utils';
 
@@ -100,6 +102,7 @@ async function errorMessage(res: Response): Promise<string> {
 }
 
 export default function GroupsWorkspace() {
+  const { showToast } = useToast();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GroupDetail | null>(null);
@@ -124,6 +127,12 @@ export default function GroupsWorkspace() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importFileError, setImportFileError] = useState('');
+
+  useEffect(() => {
+    if (actionError !== '') {
+      showToast(actionError, 'error');
+    }
+  }, [actionError, showToast]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadGroups = useCallback(async () => {
@@ -202,6 +211,7 @@ export default function GroupsWorkspace() {
       setDescription('');
       setShowNewGroup(false);
       setNotice(en.groups.noticeGroupCreated);
+      showToast(en.groups.toastGroupSaved);
       setSelectedId(data.group.id);
       await loadGroups();
       await loadGroup(data.group.id);
@@ -234,6 +244,7 @@ export default function GroupsWorkspace() {
       setMemberEmail('');
       setMemberName('');
       setNotice(en.groups.noticeUserAdded);
+      showToast(en.groups.toastMemberAdded);
       await loadGroups();
     } catch {
       setActionError(en.groups.genericError);
@@ -260,6 +271,7 @@ export default function GroupsWorkspace() {
       const data = (await res.json()) as { group: GroupDetail };
       setDetail(data.group);
       setNotice(en.groups.noticeMemberRemoved);
+      showToast(en.groups.toastMemberRemoved);
       await loadGroups();
     } catch {
       setActionError(en.groups.genericError);
@@ -291,6 +303,7 @@ export default function GroupsWorkspace() {
       setDetail(data.group);
       setImportResult(data.result);
       setNotice(en.groups.noticeImported);
+      showToast(en.groups.toastImported);
       setCsvFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -390,16 +403,16 @@ export default function GroupsWorkspace() {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit" data-testid="group-list">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <Card className="h-fit min-w-0" data-testid="group-list">
           <CardHeader>
             <h2 className="text-lg font-semibold">{en.groups.groupListTitle}</h2>
           </CardHeader>
           <CardContent>
             {groupsLoading && (
-              <p role="status" className="text-sm text-muted-foreground">
-                {en.groups.groupsLoading}
-              </p>
+              <div role="status" aria-label={en.groups.groupsLoading}>
+                <SkeletonList rows={4} />
+              </div>
             )}
             {!groupsLoading && groupsError !== '' && (
               <Alert variant="danger" title={en.groups.groupsErrorTitle}>
@@ -440,7 +453,7 @@ export default function GroupsWorkspace() {
                         data-testid={`group-option-${group.id}`}
                       >
                         <span className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-medium">{group.name}</span>
+                          <span className="min-w-0 break-words font-medium">{group.name}</span>
                           {group.suppressed && (
                             <span className={cn(badgeVariants({ variant: 'outline' }), 'text-warning')}>
                               {en.groups.suppressedBadge}
@@ -460,7 +473,7 @@ export default function GroupsWorkspace() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           {!selectedId && !groupsLoading && groupsError === '' && (
             <Card>
               <CardContent>
@@ -485,7 +498,7 @@ export default function GroupsWorkspace() {
                 )}
                 {!detailLoading && detailGroup && (
                   <>
-                    <h2 className="text-xl font-semibold">{detailGroup.name}</h2>
+                    <h2 className="break-words text-xl font-semibold">{detailGroup.name}</h2>
                     <CardDescription>
                       {format(en.groups.memberCount, { count: detailGroup.member_count })}
                       {' · '}
@@ -518,7 +531,7 @@ export default function GroupsWorkspace() {
                       </p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
+                    <div className="min-w-0 overflow-x-auto">
                       <table className="w-full border-collapse text-sm">
                         <caption className="sr-only">
                           {format(en.groups.memberCount, { count: detailGroup.member_count })}

@@ -3,6 +3,7 @@ import { Inbox } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { TrendChart } from '@/components/reports/trend-chart';
 import { Alert } from '@/components/ui/alert';
+import { CountUp } from '@/components/ui/count-up';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,21 +40,25 @@ export default async function DashboardPage() {
     {
       label: en.dashboard.activeCampaigns,
       value: String(data.active_campaigns),
+      numericValue: data.active_campaigns,
       help: en.dashboard.activeCampaignsHelp,
     },
     {
       label: en.dashboard.emailsSent,
       value: String(data.delivered),
+      numericValue: data.delivered,
       help: en.dashboard.deliveredHelp,
     },
     {
       label: en.dashboard.clickRate,
       value: data.has_data ? formatRate(data.click_rate) : en.dashboard.noValue,
+      numericValue: undefined,
       help: en.dashboard.clickRateHelp,
     },
     {
       label: en.dashboard.reportRate,
       value: data.has_data ? formatRate(data.report_rate) : en.dashboard.noValue,
+      numericValue: undefined,
       help: en.dashboard.reportRateHelp,
     },
   ];
@@ -69,7 +74,11 @@ export default async function DashboardPage() {
               <Card key={metric.label} className="p-5 md:p-5" data-testid="dashboard-metric">
                 <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
                 <p className="mt-2 text-4xl font-bold leading-[44px] text-foreground">
-                  {metric.value}
+                  {metric.numericValue !== undefined ? (
+                    <CountUp value={metric.numericValue} />
+                  ) : (
+                    metric.value
+                  )}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{metric.help}</p>
               </Card>

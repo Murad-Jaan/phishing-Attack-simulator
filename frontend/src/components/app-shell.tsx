@@ -20,6 +20,7 @@ import {
 import SignOutButton from '@/components/auth/sign-out-button';
 import ThemeToggle from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
+import { ToastProvider } from '@/components/ui/toast';
 import { en } from '@/content/en';
 import type { SessionUser } from '@/lib/auth/session';
 import type { Theme } from '@/lib/theme';
@@ -86,6 +87,7 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
   }, [mobileOpen]);
 
   return (
+    <ToastProvider>
     <div className="flex min-h-dvh bg-background">
       <aside
         id="app-sidebar"
@@ -205,9 +207,12 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
           tabIndex={-1}
           className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
         >
-          <div className="mx-auto w-full max-w-[1136px]">{children}</div>
+          <div key={pathname} className="page-transition mx-auto w-full max-w-[1136px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }
