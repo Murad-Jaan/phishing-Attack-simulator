@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 import { openDemoAdmin, storageStatePath } from './support/auth';
+import { setDarkTheme } from './support/theme';
 
 async function createGroup(page: Page): Promise<string> {
   const name = `Playwright Group ${Date.now()}`;
@@ -76,7 +77,7 @@ test.describe('Target groups', () => {
     await openDemoAdmin(page);
     await page.goto('/groups');
     await createGroup(page);
-    await page.evaluate(() => document.documentElement.classList.add('dark'));
+    await setDarkTheme(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(seriousViolations(results.violations)).toEqual([]);
   });

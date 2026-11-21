@@ -2,6 +2,19 @@
 
 All notable changes to this project are recorded here. The project is delivered phase by phase; the repository owner performs commits and pushes.
 
+## [Final packaging] — Demo and report
+
+### Added
+
+- `make demo` / `scripts/demo.sh`: starts the stack, waits for health, migrates, seeds the demo organization, admins, templates, group, campaigns and events, and prints URLs and demo login emails without printing passwords.
+- `docs/final-report-outline.md`: problem, ethics, ATT&CK, HCI/accessibility, detection, test counts, security measures, limitations and future work.
+- Packaging tests for the demo target, README, screenshot checklist, report outline and `.env.example`.
+
+### Changed
+
+- README rewritten with the five-minute demo script, Mermaid architecture diagram, run/test commands, screenshot checklist, safety rules, security measures and known limitations.
+- `make test` derives the Compose network at run time so the suite works from a fresh clone in any directory.
+
 ## [Phase 1] — Planning and design
 
 ### Added

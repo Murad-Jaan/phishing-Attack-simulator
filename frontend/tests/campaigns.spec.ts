@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 import { storageStatePath, switchDemoAdmin } from './support/auth';
+import { setDarkTheme } from './support/theme';
 
 test.use({ storageState: storageStatePath('admin1') });
 
@@ -223,7 +224,7 @@ test.describe('Campaigns', () => {
     const stamp = Date.now();
     await page.goto('/campaigns');
     await createDraft(page, `M5 axe dark ${stamp}`);
-    await page.evaluate(() => document.documentElement.classList.add('dark'));
+    await setDarkTheme(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(seriousViolations(results.violations)).toEqual([]);
   });
@@ -235,7 +236,7 @@ test.describe('Campaigns', () => {
     const campaignName = `M5 dark tokens ${stamp}`;
     await page.goto('/campaigns');
     await createDraft(page, campaignName);
-    await page.evaluate(() => document.documentElement.classList.add('dark'));
+    await setDarkTheme(page);
 
     const selected = page
       .getByTestId('campaign-list')

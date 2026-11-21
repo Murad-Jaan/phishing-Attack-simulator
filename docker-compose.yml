@@ -73,6 +73,11 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app:Z
+      - ./README.md:/repo/README.md:ro,Z
+      - ./Makefile:/repo/Makefile:ro,Z
+      - ./docs:/repo/docs:ro,Z
+      - ./scripts:/repo/scripts:ro,Z
+      - ./.env.example:/repo/.env.example:ro,Z
     ports:
       - "127.0.0.1:8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

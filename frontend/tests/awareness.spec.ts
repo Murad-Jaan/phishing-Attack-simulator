@@ -2,6 +2,7 @@ import { test, expect, type Page, type APIRequestContext } from '@playwright/tes
 import AxeBuilder from '@axe-core/playwright';
 
 import { storageStatePath, switchDemoAdmin } from './support/auth';
+import { setDarkTheme } from './support/theme';
 
 test.use({ storageState: storageStatePath('admin1') });
 test.setTimeout(300_000);
@@ -273,7 +274,7 @@ test('email link records a click, redirects to awareness, and passes axe light/d
   );
   expect(serious).toEqual([]);
 
-  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await setDarkTheme(page);
   await page.waitForTimeout(500);
   const dark = await new AxeBuilder({ page }).analyze();
   const darkSerious = dark.violations.filter(
@@ -307,7 +308,7 @@ test('email link records a click, redirects to awareness, and passes axe light/d
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
     ),
   ).toEqual([]);
-  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await setDarkTheme(page);
   await page.waitForTimeout(500);
   const quizDark = await new AxeBuilder({ page }).analyze();
   expect(
@@ -339,7 +340,7 @@ test('email link records a click, redirects to awareness, and passes axe light/d
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
     ),
   ).toEqual([]);
-  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await setDarkTheme(page);
   await page.waitForTimeout(500);
   const reportsDark = await new AxeBuilder({ page }).analyze();
   expect(
@@ -361,7 +362,7 @@ test('email link records a click, redirects to awareness, and passes axe light/d
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
     ),
   ).toEqual([]);
-  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await setDarkTheme(page);
   await page.waitForTimeout(500);
   const dashboardDark = await new AxeBuilder({ page }).analyze();
   expect(

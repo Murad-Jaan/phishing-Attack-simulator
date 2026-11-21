@@ -1,4 +1,7 @@
-.PHONY: up down test lint migrate seed unlock-user reset web-prod
+.PHONY: demo up down test lint migrate seed unlock-user reset web-prod
+
+demo:
+	@bash scripts/demo.sh
 
 up:
 	@test -f .env || cp .env.example .env
@@ -13,15 +16,18 @@ reset:
 	docker compose down -v
 
 test:
+	@test -f .env || { echo "ERROR: .env is missing. Run 'make demo' first."; exit 1; }
 	docker compose exec -T api pytest -v
-	@test -f .env
 	docker compose exec -T redis sh -c 'for pattern in "rl:acct:*" "rl:ip:*" "lock:acct:*"; do redis-cli --scan --pattern "$$pattern" | while read -r key; do [ -n "$$key" ] && redis-cli DEL "$$key" >/dev/null; done; done'
-	docker run --rm --network phishing-attack-simulator_dev \
+	@network="$$(docker compose ps -q api | xargs -r docker inspect -f '{{range $$k, $$v := .NetworkSettings.Networks}}{{$$k}}{{end}}')"; \
+	test -n "$$network" || { echo "ERROR: the api container is not running. Run 'make demo' first."; exit 1; }; \
+	docker run --rm --network "$$network" \
 		-e DEMO_ADMIN_1_PASSWORD="$$(awk -F= '/^DEMO_ADMIN_1_PASSWORD=/{print substr($$0, index($$0,"=")+1)}' .env)" \
 		-e DEMO_ADMIN_2_PASSWORD="$$(awk -F= '/^DEMO_ADMIN_2_PASSWORD=/{print substr($$0, index($$0,"=")+1)}' .env)" \
 		-e MAILPIT_URL=http://mailpit:8025 \
-		-v $(PWD)/frontend:/app -w /app mcr.microsoft.com/playwright:v1.64.1-jammy \
-		sh -c "cd /app && npx playwright test --reporter=line --workers=1"
+		-v $(PWD)/frontend:/app -v phishsim_playwright_node_modules:/app/node_modules \
+		-w /app mcr.microsoft.com/playwright:v1.64.1-jammy \
+		sh -c "cd /app && npm ci --no-audit --no-fund && npx playwright test --reporter=line --workers=1"
 
 lint:
 	docker compose exec -T api ruff check .
