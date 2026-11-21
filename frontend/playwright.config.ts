@@ -8,6 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './tests/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -33,6 +34,7 @@ export default defineConfig({
       },
   use: {
     baseURL: process.env.BASE_URL || (process.env.CI ? 'http://127.0.0.1:3000' : 'http://phishsim-web:3000'),
+    reducedMotion: 'reduce',
     trace: 'on-first-retry',
   },
   projects: [

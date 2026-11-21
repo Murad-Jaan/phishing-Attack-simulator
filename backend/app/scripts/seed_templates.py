@@ -30,7 +30,7 @@ SCENARIOS: list[dict[str, Any]] = [
             "Dear customer,\n\n"
             "We detected unusual activity. Your account will be suspended within "
             "24 hours unless you confirm your details immediately.\n\n"
-            "Verify your account: https://account-verify.example.test/login\n\n"
+            "Verify your account: {{tracking_link}}\n\n"
             "Account Security Team"
         ),
         "difficulty": TemplateDifficulty.EASY,
@@ -163,7 +163,7 @@ SCENARIOS: list[dict[str, Any]] = [
         "body": (
             "Hello {{first_name}},\n\n"
             "A file has been shared with you: Q3 Salary Review.\n\n"
-            "Open the file: https://company-docs.example.test/shared/q3-salary\n\n"
+            "Open the file: {{tracking_link}}\n\n"
             "You may need to re-authenticate to view this document.\n\n"
             "Document Service"
         ),
@@ -211,7 +211,7 @@ SCENARIOS: list[dict[str, Any]] = [
             "Hello {{first_name}},\n\n"
             "We could not deliver your parcel. A small rescheduling fee is "
             "required to arrange a new delivery date.\n\n"
-            "Reschedule here: https://parcel-tracking.example.test/reschedule\n\n"
+            "Reschedule here: {{tracking_link}}\n\n"
             "Delivery Updates"
         ),
         "difficulty": TemplateDifficulty.HARD,
@@ -242,7 +242,7 @@ SCENARIOS: list[dict[str, Any]] = [
             "Hi {{first_name}},\n\n"
             "A document was shared with you in the team workspace. Open the "
             "workspace to review it.\n\n"
-            "Open document: https://workspace.example.test/s/abc123\n\n"
+            "Open document: {{tracking_link}}\n\n"
             "Workspace"
         ),
         "difficulty": TemplateDifficulty.MEDIUM,

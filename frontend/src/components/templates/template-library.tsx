@@ -384,10 +384,12 @@ export function TemplateLibrary() {
                 data-testid={`template-card-${template.id}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold leading-6 text-foreground">
+                  <h2 className="min-w-0 break-words text-base font-semibold leading-6 text-foreground">
                     {template.name}
                   </h2>
-                  <Badge variant="secondary">{statusLabel[template.status]}</Badge>
+                  <Badge variant="secondary" className="shrink-0">
+                    {statusLabel[template.status]}
+                  </Badge>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">

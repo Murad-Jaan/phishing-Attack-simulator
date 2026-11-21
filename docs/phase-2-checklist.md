@@ -105,11 +105,11 @@ Phase 2 builds the core platform only. It does **not** include event tracking, a
 
 | Task | Size | Acceptance criteria |
 |---|---|---|
-| Celery scheduling | M | Scheduled sends via worker/beat; idempotent; timezone-aware; cancel/pause. |
-| Rate caps and send window | M | Server-side enforcement; authorization expiry checked at send time. |
-| **Audit export and filter UI** | M | Filters + export for audit logs; RBAC-gated; append-only; no secrets. |
-| Retention job | M | Runs on schedule; preview, delete/anonymize, audit; tested. |
-| Operational docs | S | Runbook for start/stop, migrations, seeding, logs and common failures. |
+| Celery scheduling | M | Scheduled sends via worker/beat; idempotent; timezone-aware; cancel/pause. ✅ Done — `app/services/scheduling_service.py`, beat schedule, `tests/test_scheduling.py` |
+| Rate caps and send window | M | Server-side enforcement; authorization expiry checked at send time. ✅ Done — window/rate columns in `0007`, scope rechecked at dispatch, `tests/test_scheduling.py` |
+| **Audit export and filter UI** | M | Filters + export for audit logs; RBAC-gated; append-only; no secrets. ✅ Done — `app/api/v1/audit.py`, `/settings/audit`, CSV neutralization, `tests/test_scheduling.py` |
+| Retention job | M | Runs on schedule; preview, delete/anonymize, audit; tested. ✅ Done — `retention.run_scheduled`, `campaign_sends` scope, `tests/test_retention.py` |
+| Operational docs | S | Runbook for start/stop, migrations, seeding, logs and common failures. ✅ Done — `docs/runbook.md` |
 
 ---
 

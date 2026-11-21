@@ -1,20 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const DEMO_ADMIN_EMAIL = 'demo-admin-1@example.test';
-
-async function loginAsDemoAdmin(page: Page): Promise<void> {
-  const password = process.env.DEMO_ADMIN_1_PASSWORD ?? '';
-  expect(
-    password,
-    'DEMO_ADMIN_1_PASSWORD must be provided at run time (never committed) and `make seed` must have run on the dev DB'
-  ).toMatch(/^\S{12,}$/);
-  await page.goto('/login');
-  await page.getByTestId('login-email').fill(DEMO_ADMIN_EMAIL);
-  await page.getByTestId('login-password').fill(password);
-  await page.getByTestId('login-submit').click();
-  await page.waitForURL('/');
-}
+import { openDemoAdmin, storageStatePath } from './support/auth';
+import { setDarkTheme } from './support/theme';
 
 async function createGroup(page: Page): Promise<string> {
   const name = `Playwright Group ${Date.now()}`;
@@ -33,10 +21,12 @@ function seriousViolations(violations: { impact?: string | null }[]) {
 }
 
 test.describe('Target groups', () => {
+  test.use({ storageState: storageStatePath('admin1') });
+
   test('happy path: create group, add user, import CSV with a row error and suppression warning', async ({
     page,
   }: any) => {
-    await loginAsDemoAdmin(page);
+    await openDemoAdmin(page);
     await page.goto('/groups');
     await createGroup(page);
 
@@ -74,7 +64,7 @@ test.describe('Target groups', () => {
   test('groups page has no serious or critical axe issues in light mode', async ({
     page,
   }: any) => {
-    await loginAsDemoAdmin(page);
+    await openDemoAdmin(page);
     await page.goto('/groups');
     await createGroup(page);
     const results = await new AxeBuilder({ page }).analyze();
@@ -84,10 +74,10 @@ test.describe('Target groups', () => {
   test('groups page has no serious or critical axe issues in dark mode', async ({
     page,
   }: any) => {
-    await loginAsDemoAdmin(page);
+    await openDemoAdmin(page);
     await page.goto('/groups');
     await createGroup(page);
-    await page.evaluate(() => document.documentElement.classList.add('dark'));
+    await setDarkTheme(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(seriousViolations(results.violations)).toEqual([]);
   });

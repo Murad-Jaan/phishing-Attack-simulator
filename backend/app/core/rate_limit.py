@@ -36,6 +36,11 @@ def lock_key(email: str) -> str:
     return f"lock:acct:{h}"
 
 
+def analyzer_key(identity: str) -> str:
+    h = _hmac_key(f"analyzer:{identity}")
+    return f"rl:analyzer:{h}"
+
+
 def _get_redis() -> Redis | None:
     try:
         from app.core.redis import get_redis
@@ -112,6 +117,25 @@ def clear_user_lockout(redis_client: Redis, email: str) -> None:
         redis_client.delete(account_key(email))
     except Exception:
         pass
+
+
+def check_analyzer_rate_limit(
+    request: Request, identity: str, limit: int = 30, window: int = 900
+) -> RateLimitResult:
+    r = _get_redis()
+    if r is None:
+        return RateLimitResult(False, 60)
+    key = analyzer_key(identity)
+    try:
+        count = int(cast(int, r.incr(key)))
+        if count == 1:
+            r.expire(key, window)
+        if count > limit:
+            ttl = int(cast(int, r.ttl(key)))
+            return RateLimitResult(False, ttl if ttl and ttl > 0 else window)
+        return RateLimitResult(True)
+    except Exception:
+        return RateLimitResult(False, 60)
 
 
 def check_rate_limit_request(request: Request, email: str) -> RateLimitResult:

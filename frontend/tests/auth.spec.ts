@@ -1,9 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const DEMO_ADMIN_EMAIL = 'demo-admin-1@example.test';
+import { demoAdminEmail, openDemoAdmin, storageStatePath } from './support/auth';
 
-async function loginAsDemoAdmin(page: Page): Promise<void> {
+const DEMO_ADMIN_EMAIL = demoAdminEmail('admin1');
+
+async function loginViaForm(page: Page): Promise<void> {
   const password = process.env.DEMO_ADMIN_1_PASSWORD ?? '';
   expect(
     password,
@@ -17,10 +19,12 @@ async function loginAsDemoAdmin(page: Page): Promise<void> {
 }
 
 test.describe('Authenticated shell accessibility', () => {
+  test.use({ storageState: storageStatePath('admin1') });
+
   test('authenticated home shell should not have serious or critical accessibility issues', async ({
     page,
   }: any) => {
-    await loginAsDemoAdmin(page);
+    await openDemoAdmin(page);
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     const violations = accessibilityScanResults.violations.filter(
       (v) => v.impact === 'serious' || v.impact === 'critical'
@@ -33,7 +37,7 @@ test.describe('Login flow', () => {
   test('happy path: login shows display name and role, sign out returns to /login', async ({
     page,
   }: any) => {
-    await loginAsDemoAdmin(page);
+    await loginViaForm(page);
     await expect(page.getByText('Signed in as')).toBeVisible();
     await expect(page.getByText('Demo Admin 1')).toBeVisible();
     await expect(page.getByText('Role: admin')).toBeVisible();

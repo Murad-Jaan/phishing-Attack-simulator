@@ -32,6 +32,19 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      mailpit:
+        image: axllent/mailpit:v1.20.7
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: 1
+          MP_SMTP_AUTH_ALLOW_INSECURE: 1
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 1025:1025
+          - 8025:8025
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -51,6 +64,8 @@ jobs:
         run: |
           cd backend
           mypy app
+      - name: Alias Mailpit to localhost for sandbox SMTP
+        run: sudo sh -c 'echo "127.0.0.1 mailpit" >> /etc/hosts'
       - name: Run tests
         env:
           DATABASE_URL: postgresql+psycopg://phish:phishpass@localhost:5432/phishsim
@@ -107,7 +122,7 @@ jobs:
           echo "SESSION_SECRET=${SESSION_SECRET}" >> .env
           echo "CSRF_SECRET=${CSRF_SECRET}" >> .env
       - name: Start API stack
-        run: docker compose up -d --build postgres redis mailpit api
+        run: docker compose up -d --build postgres redis mailpit api worker
       - name: Wait for API health (90s max)
         run: |
           set -euo pipefail
@@ -121,6 +136,19 @@ jobs:
           echo "API did not become healthy within 90s; api container logs:"
           docker compose logs --no-color api
           exit 1
+      - name: Wait for Mailpit
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8025/api/v1/messages >/dev/null 2>&1; then
+              echo "Mailpit healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Mailpit did not become healthy within 30s; mailpit container logs:"
+          docker compose logs --no-color mailpit
+          exit 1
       - name: Run database migrations
         run: docker compose exec -T api alembic upgrade head
       - name: Seed demo admin (run-only password)
@@ -132,7 +160,9 @@ jobs:
       - name: Playwright with axe (production build)
         env:
           API_INTERNAL_URL: http://127.0.0.1:8000
+          MAILPIT_URL: http://127.0.0.1:8025
           DEMO_ADMIN_1_PASSWORD: ${{ env.DEMO_ADMIN_1_PASSWORD }}
+          DEMO_ADMIN_2_PASSWORD: ${{ env.DEMO_ADMIN_2_PASSWORD }}
         run: |
           cd frontend
           npx playwright test

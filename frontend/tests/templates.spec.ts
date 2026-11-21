@@ -1,23 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const DEMO_ADMIN_EMAIL = 'demo-admin-1@example.test';
-
-async function loginAsDemoAdmin(page: Page): Promise<void> {
-  const password = process.env.DEMO_ADMIN_1_PASSWORD ?? '';
-  expect(
-    password,
-    'DEMO_ADMIN_1_PASSWORD must be provided at run time (never committed) and `make seed` must have run on the dev DB',
-  ).toMatch(/^\S{12,}$/);
-  await page.goto('/login');
-  await page.getByTestId('login-email').fill(DEMO_ADMIN_EMAIL);
-  await page.getByTestId('login-password').fill(password);
-  await page.getByTestId('login-submit').click();
-  await page.waitForURL('/');
-}
+import { storageStatePath } from './support/auth';
 
 async function openTemplates(page: Page): Promise<void> {
-  await loginAsDemoAdmin(page);
   await page.goto('/templates');
   await expect(page.getByTestId('template-results')).toBeVisible();
   await expect(page.getByTestId('template-grid')).toBeVisible();
@@ -32,6 +18,14 @@ function criticalViolations(results: {
 }
 
 test.describe('Template library', () => {
+  test.use({ storageState: storageStatePath('admin1') });
+
+  test('reuses the global setup auth state without showing the login form', async ({ page }) => {
+    await page.goto('/templates');
+    await expect(page.getByTestId('template-results')).toBeVisible();
+    await expect(page.getByTestId('login-email')).toHaveCount(0);
+  });
+
   test('filters templates, previews red flags, switches viewport and closes on Escape', async ({
     page,
   }) => {
