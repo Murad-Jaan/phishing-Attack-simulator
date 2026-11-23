@@ -17,18 +17,24 @@ export default async function SignUpPage() {
   }
 
   return (
-    <div className="page-transition flex min-h-dvh flex-col bg-background">
-      <div className="flex justify-end px-4 py-4">
+    <div className="page-transition relative isolate flex min-h-dvh flex-col overflow-hidden bg-background">
+      <div className="aurora-backdrop" aria-hidden="true">
+        <span className="aurora-blob aurora-blob-a" />
+        <span className="aurora-blob aurora-blob-b" />
+        <span className="aurora-blob aurora-blob-c" />
+        <div className="aurora-grid" />
+      </div>
+      <div className="relative z-10 flex justify-end px-4 py-4">
         <ThemeToggle initialTheme={theme} />
       </div>
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex flex-1 items-center justify-center px-4 pb-12"
+        className="relative z-10 flex flex-1 items-center justify-center px-4 pb-12"
       >
-        <Card className="mx-auto w-full max-w-md">
+        <Card className="auth-card mx-auto w-full max-w-md">
           <CardHeader className="mb-6 items-center text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <span className="auth-shield flex h-12 w-12 items-center justify-center rounded-xl">
               <UserPlus className="h-6 w-6" aria-hidden="true" />
             </span>
             <p className="mt-1 text-sm font-semibold text-foreground">{en.app.name}</p>

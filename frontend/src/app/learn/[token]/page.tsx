@@ -74,11 +74,17 @@ export default async function AwarenessPage({
   const content = await loadAwareness(token);
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-surface">
+    <div className="relative isolate min-h-dvh overflow-hidden bg-background">
+      <div className="aurora-backdrop" aria-hidden="true">
+        <span className="aurora-blob aurora-blob-a" />
+        <span className="aurora-blob aurora-blob-b" />
+        <span className="aurora-blob aurora-blob-c" />
+        <div className="aurora-grid" />
+      </div>
+      <header className="relative z-10 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4">
           <span
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-tint text-primary-strong"
+            className="brand-badge flex h-10 w-10 items-center justify-center rounded-full"
             aria-hidden="true"
           >
             <ShieldCheck className="h-5 w-5" />
@@ -92,7 +98,7 @@ export default async function AwarenessPage({
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto max-w-3xl px-4 py-10 sm:py-14"
+        className="relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-14"
       >
         <span className="awareness-enter awareness-delay-1 inline-flex items-center gap-2 rounded-full border border-success-tint-border bg-success-tint px-3 py-1 text-xs font-semibold text-success">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />

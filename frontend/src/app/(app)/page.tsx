@@ -1,4 +1,4 @@
-import { Inbox } from 'lucide-react';
+import { Flag, Inbox, MailOpen, MousePointerClick, Send, type LucideIcon } from 'lucide-react';
 
 import { PageHeader } from '@/components/page-header';
 import { TrendChart } from '@/components/reports/trend-chart';
@@ -36,30 +36,40 @@ export default async function DashboardPage() {
     );
   }
 
-  const metrics = [
+  const metrics: {
+    label: string;
+    value: string;
+    numericValue?: number;
+    help: string;
+    icon: LucideIcon;
+  }[] = [
     {
       label: en.dashboard.activeCampaigns,
       value: String(data.active_campaigns),
       numericValue: data.active_campaigns,
       help: en.dashboard.activeCampaignsHelp,
+      icon: Send,
     },
     {
       label: en.dashboard.emailsSent,
       value: String(data.delivered),
       numericValue: data.delivered,
       help: en.dashboard.deliveredHelp,
+      icon: MailOpen,
     },
     {
       label: en.dashboard.clickRate,
       value: data.has_data ? formatRate(data.click_rate) : en.dashboard.noValue,
       numericValue: undefined,
       help: en.dashboard.clickRateHelp,
+      icon: MousePointerClick,
     },
     {
       label: en.dashboard.reportRate,
       value: data.has_data ? formatRate(data.report_rate) : en.dashboard.noValue,
       numericValue: undefined,
       help: en.dashboard.reportRateHelp,
+      icon: Flag,
     },
   ];
 
@@ -70,19 +80,32 @@ export default async function DashboardPage() {
       <div className="space-y-6">
         <section aria-label={en.dashboard.title}>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <Card key={metric.label} className="p-5 md:p-5" data-testid="dashboard-metric">
-                <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
-                <p className="mt-2 text-4xl font-bold leading-[44px] text-foreground">
-                  {metric.numericValue !== undefined ? (
-                    <CountUp value={metric.numericValue} />
-                  ) : (
-                    metric.value
-                  )}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{metric.help}</p>
-              </Card>
-            ))}
+            {metrics.map((metric, index) => {
+              const Icon = metric.icon;
+              return (
+                <Card
+                  key={metric.label}
+                  className="metric-card stagger-item p-5 md:p-5"
+                  style={{ animationDelay: `${index * 70}ms` }}
+                  data-testid="dashboard-metric"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
+                    <span className="metric-icon shrink-0" aria-hidden="true">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-4xl font-bold leading-[44px] text-foreground">
+                    {metric.numericValue !== undefined ? (
+                      <CountUp value={metric.numericValue} />
+                    ) : (
+                      metric.value
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{metric.help}</p>
+                </Card>
+              );
+            })}
           </div>
         </section>
 

@@ -13,14 +13,20 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="page-transition flex min-h-dvh flex-col bg-background">
-      <div className="flex justify-end px-4 py-4">
+    <div className="page-transition relative isolate flex min-h-dvh flex-col overflow-hidden bg-background">
+      <div className="aurora-backdrop" aria-hidden="true">
+        <span className="aurora-blob aurora-blob-a" />
+        <span className="aurora-blob aurora-blob-b" />
+        <span className="aurora-blob aurora-blob-c" />
+        <div className="aurora-grid" />
+      </div>
+      <div className="relative z-10 flex justify-end px-4 py-4">
         <ThemeToggle initialTheme={theme} />
       </div>
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex flex-1 items-center justify-center px-4 pb-12"
+        className="relative z-10 flex flex-1 items-center justify-center px-4 pb-12"
       >
         <LoginForm />
       </main>

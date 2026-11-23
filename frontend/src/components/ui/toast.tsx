@@ -22,7 +22,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 const variantStyles: Record<ToastVariant, string> = {
   success: 'border-success-tint-border bg-success-tint text-success',
-  error: 'border-danger-tint-border bg-danger-tint text-danger',
+  error: 'border-danger-tint-border bg-danger-tint text-danger-strong',
   info: 'border-border bg-surface text-foreground',
 };
 

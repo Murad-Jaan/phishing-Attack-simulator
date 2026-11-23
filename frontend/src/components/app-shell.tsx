@@ -88,27 +88,35 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
 
   return (
     <ToastProvider>
-    <div className="flex min-h-dvh bg-background">
+    <div className="relative isolate flex min-h-dvh bg-background">
+      <div className="aurora-backdrop" aria-hidden="true">
+        <span className="aurora-blob aurora-blob-a" />
+        <span className="aurora-blob aurora-blob-b" />
+        <span className="aurora-blob aurora-blob-c" />
+        <div className="aurora-grid" />
+      </div>
+
       <aside
         id="app-sidebar"
         aria-label={en.nav.sidebarLabel}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-border bg-surface transition-transform duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden border-r border-border bg-surface transition-transform duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:translate-x-0',
           mobileOpen ? 'visible translate-x-0' : 'invisible -translate-x-full lg:visible',
         )}
       >
+        <div className="sidebar-glow pointer-events-none absolute inset-x-0 top-0 h-28" aria-hidden="true" />
         <Link
           href="/"
-          className="flex min-h-16 items-center gap-2 border-b border-border px-4"
+          className="relative flex min-h-16 items-center gap-2 border-b border-border px-4"
           onClick={() => setMobileOpen(false)}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary-strong">
+          <span className="brand-badge flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
             <ShieldCheck className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="text-sm font-semibold leading-5 text-foreground">{en.app.name}</span>
         </Link>
 
-        <nav className="flex-1 overflow-y-auto p-3" aria-label={en.nav.mainLabel}>
+        <nav className="relative flex-1 overflow-y-auto p-3" aria-label={en.nav.mainLabel}>
           <ul className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -120,13 +128,16 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
                     aria-current={active ? 'page' : undefined}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                      'group flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
                       active
-                        ? 'bg-primary-tint text-primary-strong'
+                        ? 'nav-active bg-primary-tint text-primary-strong'
                         : 'text-strong hover:bg-surface-muted hover:text-foreground',
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <Icon
+                      className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none"
+                      aria-hidden="true"
+                    />
                     {item.label}
                   </Link>
                 </li>
@@ -138,7 +149,7 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
         <div className="border-t border-border p-4">
           <div className="mb-3 flex items-center gap-3">
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-tint text-xs font-bold text-primary-strong"
+              className="brand-badge flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
               aria-hidden="true"
             >
               {initials}
@@ -173,14 +184,14 @@ export function AppShell({ user, initialTheme, children }: AppShellProps) {
         />
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-surface px-4 lg:hidden">
           <Link
             href="/"
             className="flex min-w-0 items-center gap-2"
             onClick={() => setMobileOpen(false)}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary-strong">
+            <span className="brand-badge flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             </span>
             <span className="truncate text-sm font-semibold text-foreground">{en.app.name}</span>
