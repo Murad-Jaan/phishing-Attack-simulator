@@ -1,10 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
 export async function setDarkTheme(page: Page): Promise<void> {
-  await page.addStyleTag({
-    content:
-      '*, *::before, *::after { transition: none !important; animation-delay: 0s !important; }',
-  });
   await page.evaluate(() => document.documentElement.classList.add('dark'));
   await expect
     .poll(() =>

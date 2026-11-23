@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-REPO = Path("/repo")
+REPO = Path(__file__).resolve().parents[2]
 
 
 def _read(name: str) -> str:

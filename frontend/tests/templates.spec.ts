@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 import { storageStatePath } from './support/auth';
+import { setDarkTheme } from './support/theme';
 
 async function openTemplates(page: Page): Promise<void> {
   await page.goto('/templates');
@@ -86,8 +87,8 @@ test.describe('Template library', () => {
   test('template preview dialog should not have serious or critical accessibility issues in dark mode', async ({
     page,
   }) => {
-    await page.emulateMedia({ colorScheme: 'dark' });
     await openTemplates(page);
+    await setDarkTheme(page);
     await page.getByTestId('template-search').fill('SC-01');
     await expect(
       page.getByRole('heading', { name: 'SC-01: Account suspension warning' }),
