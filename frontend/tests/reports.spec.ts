@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 import { openDemoAdmin, storageStatePath } from './support/auth';
+import { waitForTheme } from './support/theme';
 
 test.use({ storageState: storageStatePath('admin1') });
 
@@ -27,7 +28,7 @@ test('reports controls, definitions and charts pass axe in light and dark themes
 
   await expectNoSeriousA11y(page);
   await page.getByTestId('theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await waitForTheme(page, 'dark');
   await expectNoSeriousA11y(page);
 });
 
@@ -44,6 +45,6 @@ test('dashboard renders four metrics and its trend table in light and dark theme
 
   await expectNoSeriousA11y(page);
   await page.getByTestId('theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await waitForTheme(page, 'dark');
   await expectNoSeriousA11y(page);
 });

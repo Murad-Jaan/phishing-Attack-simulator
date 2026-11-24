@@ -165,8 +165,7 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       scroll-behavior: auto !important;
-      transition-delay: 0s !important;
-      transition-duration: 0.01ms !important;
+      transition: none !important;
     }
   }
 }
@@ -764,15 +763,15 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .theme-switching,
-  .theme-switching *,
-  .theme-switching *::before,
-  .theme-switching *::after {
-    transition: background-color 200ms ease, border-color 200ms ease,
-      color 200ms ease, fill 200ms ease, stroke 200ms ease,
-      box-shadow 200ms ease !important;
-  }
+/* Applying a theme must not animate foreground/background pairs: during the
+ * transition the two tokens would briefly mix (e.g. dark text on a light
+ * surface), which is both a visible flash and a real contrast violation.
+ * Suppress transitions for the duration of the swap so colors change atomically. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 button:not(:disabled) {
