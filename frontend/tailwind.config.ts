@@ -65,6 +65,10 @@ const config: Config = {
           tint: 'var(--warning-tint)',
           'tint-border': 'var(--warning-tint-border)',
         },
+        accent: {
+          cyan: 'var(--accent-cyan)',
+          violet: 'var(--accent-violet)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

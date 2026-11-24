@@ -73,6 +73,11 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app:Z
+      - ./README.md:/repo/README.md:ro,Z
+      - ./Makefile:/repo/Makefile:ro,Z
+      - ./docs:/repo/docs:ro,Z
+      - ./scripts:/repo/scripts:ro,Z
+      - ./.env.example:/repo/.env.example:ro,Z
     ports:
       - "127.0.0.1:8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -113,6 +118,33 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - dev
+    restart: unless-stopped
+
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: phishsim-worker:dev
+    container_name: phishsim-beat
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://phish:phishpass@postgres:5432/phishsim}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:Z
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel=info"]
     networks:
       - dev
     restart: unless-stopped

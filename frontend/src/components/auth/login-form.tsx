@@ -92,9 +92,9 @@ export default function LoginForm() {
   const errorDescribedBy = errorMessage !== '' ? 'login-error' : undefined;
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card className="auth-card mx-auto w-full max-w-md">
       <CardHeader className="mb-6 items-center text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+        <span className="auth-shield flex h-12 w-12 items-center justify-center rounded-xl">
           <ShieldCheck className="h-6 w-6" aria-hidden="true" />
         </span>
         <p className="mt-1 text-sm font-semibold text-foreground">{en.app.name}</p>
@@ -102,6 +102,7 @@ export default function LoginForm() {
           {en.auth.welcomeTitle}
         </CardTitle>
         <CardDescription>{en.auth.loginPurpose}</CardDescription>
+        <span className="accent-bar mx-auto mt-2" aria-hidden="true" />
       </CardHeader>
       <CardContent>
         {errorMessage !== '' && (

@@ -3,8 +3,8 @@
 Sessions are authentication artifacts, not organization data. They deliberately
 use a short, fixed cleanup rule: expired or revoked sessions are kept for a
 7-day grace period, then deleted. The organization's configurable
-``retention_days`` setting does **not** apply to sessions; it will govern
-campaign, event, report and analyzer scopes added in M3+.
+``retention_days`` setting does **not** apply to sessions; it governs the
+campaign-send delivery journal and future organization-data scopes.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.audit import write_audit
+from app.models.campaign import CampaignSend
 from app.models.organization import Organization
 from app.models.session import AuthSession
 from app.models.user import User
@@ -69,11 +70,47 @@ def _delete_sessions(db: Session, org_id: uuid.UUID, now: datetime) -> int:
     return int(result.rowcount or 0)
 
 
+def _campaign_send_cutoff(
+    db: Session, org_id: uuid.UUID, now: datetime
+) -> datetime:
+    org = db.get(Organization, org_id)
+    days = org.retention_days if org is not None else 90
+    return now - timedelta(days=days)
+
+
+def _count_campaign_sends(db: Session, org_id: uuid.UUID, now: datetime) -> int:
+    cutoff = _campaign_send_cutoff(db, org_id, now)
+    stmt = select(func.count(CampaignSend.id)).where(
+        CampaignSend.org_id == org_id,
+        CampaignSend.created_at < cutoff,
+    )
+    return int(db.execute(stmt).scalar_one())
+
+
+def _delete_campaign_sends(db: Session, org_id: uuid.UUID, now: datetime) -> int:
+    cutoff = _campaign_send_cutoff(db, org_id, now)
+    stmt = (
+        delete(CampaignSend)
+        .where(
+            CampaignSend.org_id == org_id,
+            CampaignSend.created_at < cutoff,
+        )
+        .execution_options(synchronize_session=False)
+    )
+    result = db.execute(stmt)
+    return int(result.rowcount or 0)
+
+
 RETENTION_SCOPES: dict[str, RetentionScope] = {
     "sessions": RetentionScope(
         name="sessions",
         count=_count_sessions,
         delete=_delete_sessions,
+    ),
+    "campaign_sends": RetentionScope(
+        name="campaign_sends",
+        count=_count_campaign_sends,
+        delete=_delete_campaign_sends,
     ),
 }
 # Convenience alias for callers that just want the registry.

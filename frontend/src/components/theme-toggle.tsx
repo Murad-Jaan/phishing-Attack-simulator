@@ -42,9 +42,11 @@ export default function ThemeToggle({ initialTheme, className }: ThemeToggleProp
     const next: Theme = current === 'dark' ? 'light' : 'dark';
     const root = document.documentElement;
 
+    root.classList.add('theme-switching');
     root.classList.remove('light', 'dark');
     root.classList.add(next);
     root.dataset.theme = next;
+    window.setTimeout(() => root.classList.remove('theme-switching'), 260);
 
     const secure = window.location.protocol === 'https:' ? '; Secure' : '';
     document.cookie = `${THEME_COOKIE}=${next}; Path=/; Max-Age=${THEME_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
@@ -64,9 +66,9 @@ export default function ThemeToggle({ initialTheme, className }: ThemeToggleProp
       )}
     >
       {isDark ? (
-        <Sun className="h-5 w-5" aria-hidden="true" />
+        <Sun key="sun" className="theme-icon h-5 w-5" aria-hidden="true" />
       ) : (
-        <Moon className="h-5 w-5" aria-hidden="true" />
+        <Moon key="moon" className="theme-icon h-5 w-5" aria-hidden="true" />
       )}
     </button>
   );

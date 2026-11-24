@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_BASE_URL: str = "http://127.0.0.1:3000"
     API_BASE_URL: str = "http://127.0.0.1:8000"
+    TRACKING_BASE_URL: str = ""
 
     SESSION_SECRET: str = "changeme-session-secret-min-32-chars"
     CSRF_SECRET: str = "changeme-csrf-secret-min-32-chars"

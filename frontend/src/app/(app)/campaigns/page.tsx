@@ -1,14 +1,13 @@
-import { Send } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
-import { PlaceholderPage } from '@/components/placeholder-page';
-import { en } from '@/content/en';
+import CampaignsWorkspace from '@/components/campaigns/campaigns-workspace';
+import { getSessionUser } from '@/lib/auth/session';
 
-export default function CampaignsPage() {
-  return (
-    <PlaceholderPage
-      title={en.nav.campaigns}
-      description={en.pages.campaigns}
-      icon={Send}
-    />
-  );
+export default async function CampaignsPage() {
+  const user = await getSessionUser();
+  if (!user) {
+    redirect('/login');
+  }
+
+  return <CampaignsWorkspace isAdmin={user.role === 'admin'} />;
 }

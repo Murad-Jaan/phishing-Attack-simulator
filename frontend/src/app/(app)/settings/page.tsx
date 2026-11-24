@@ -1,8 +1,10 @@
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { en } from '@/content/en';
 import { getOrganizationSettings } from '@/lib/api/settings';
@@ -55,6 +57,18 @@ export default async function SettingsPage() {
                   <dd className="mt-1 text-sm font-semibold text-foreground">{settings.timezone}</dd>
                 </div>
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{en.settings.auditLink}</CardTitle>
+              <CardDescription>{en.settings.auditLinkDescription}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/settings/audit" className={buttonVariants({ variant: 'secondary' })}>
+                {en.settings.auditLink}
+              </Link>
             </CardContent>
           </Card>
 

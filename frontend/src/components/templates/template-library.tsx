@@ -384,10 +384,12 @@ export function TemplateLibrary() {
                 data-testid={`template-card-${template.id}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold leading-6 text-foreground">
+                  <h2 className="min-w-0 break-words text-base font-semibold leading-6 text-foreground">
                     {template.name}
                   </h2>
-                  <Badge variant="secondary">{statusLabel[template.status]}</Badge>
+                  <Badge variant="secondary" className="shrink-0">
+                    {statusLabel[template.status]}
+                  </Badge>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -553,7 +555,10 @@ export function TemplateLibrary() {
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-              <div className="min-h-0 flex-1 overflow-auto bg-background p-4 md:p-6">
+              <div
+                className="min-h-0 flex-1 overflow-auto bg-background p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:p-6"
+                tabIndex={0}
+              >
                 <div
                   data-testid="preview-viewport"
                   data-viewport={viewport}
@@ -601,8 +606,9 @@ export function TemplateLibrary() {
               {showRedFlags ? (
                 <aside
                   aria-label={en.templates.redFlagsPanel}
-                  className="w-full shrink-0 overflow-auto border-t border-border bg-surface-muted p-4 lg:w-80 lg:border-l lg:border-t-0 md:p-6"
+                  className="w-full shrink-0 overflow-auto border-t border-border bg-surface-muted p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring lg:w-80 lg:border-l lg:border-t-0 md:p-6"
                   data-testid="red-flags-panel"
+                  tabIndex={0}
                 >
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-strong">
                     {en.templates.redFlagsPanel}

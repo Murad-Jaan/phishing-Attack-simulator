@@ -1,7 +1,8 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import html
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 def _validate_header_value(value: str, field: str) -> None:
@@ -23,7 +24,29 @@ def is_sandbox_domain(domain: str) -> bool:
     return False
 
 
-def send_mail_sandbox(to_email: str, subject: str, body: str) -> bool:
+def body_to_html(body: str, tracking_link: str | None = None) -> str:
+    """Render the plain body as safe HTML with one clickable tracking link."""
+    escaped = html.escape(body)
+    if tracking_link:
+        text_link = html.escape(tracking_link)
+        href_link = html.escape(tracking_link, quote=True)
+        escaped = escaped.replace(
+            text_link,
+            f'<a href="{href_link}">{text_link}</a>',
+        )
+    return (
+        "<!doctype html><html><body><p>"
+        + escaped.replace("\n", "<br>\n")
+        + "</p></body></html>"
+    )
+
+
+def send_mail_sandbox(
+    to_email: str,
+    subject: str,
+    body: str,
+    html_body: str | None = None,
+) -> bool:
     """
     Synchronous SMTP send to Mailpit with sandbox enforcement
     """
@@ -46,11 +69,13 @@ def send_mail_sandbox(to_email: str, subject: str, body: str) -> bool:
     smtp_from = os.getenv("SMTP_FROM", "sandbox@example.test")
     _validate_header_value(smtp_from, "sender")
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart('alternative' if html_body else 'mixed')
     msg['From'] = smtp_from
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
+    if html_body:
+        msg.attach(MIMEText(html_body, 'html'))
     
     try:
         with smtplib.SMTP(smtp_host, smtp_port) as server:

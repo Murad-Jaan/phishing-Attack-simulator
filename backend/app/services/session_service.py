@@ -52,6 +52,28 @@ def rotate_session(db: Session, old: AuthSession, user: User) -> tuple[AuthSessi
     return create_session(db, user)
 
 
+def _touch_last_seen(
+    db: Session, session_id, previous: datetime, now: datetime
+) -> None:
+    bind = db.get_bind()
+    engine = getattr(bind, "engine", bind)
+    touch = Session(bind=engine)
+    try:
+        touch.execute(
+            update(AuthSession)
+            .where(
+                AuthSession.id == session_id,
+                AuthSession.last_seen_at == previous,
+            )
+            .values(last_seen_at=now)
+        )
+        touch.commit()
+    except Exception:
+        touch.rollback()
+    finally:
+        touch.close()
+
+
 def get_session_by_token(db: Session, token: str) -> AuthSession | None:
     token_hash = __import__("hashlib").sha256(token.encode()).digest()
     stmt = select(AuthSession).where(AuthSession.token_hash == token_hash)
@@ -67,12 +89,11 @@ def get_session_by_token(db: Session, token: str) -> AuthSession | None:
     last = getattr(sess, "last_seen_at", None)
     if last and (now - last) > timedelta(minutes=SESSION_IDLE_MINUTES):
         return None
-    sess.last_seen_at = now
-    db.add(sess)
-    db.flush()
     user = db.get(User, sess.user_id)
     if not user or not user.is_active:
         return None
+    if last is not None and (now - last) > timedelta(minutes=1):
+        _touch_last_seen(db, sess.id, last, now)
     return sess
 
 

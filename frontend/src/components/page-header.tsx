@@ -10,6 +10,7 @@ export function PageHeader({ title, description, children }: PageHeaderProps) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-2">
+        <span className="accent-bar mb-3" aria-hidden="true" />
         <h1 className="text-2xl font-bold leading-8 tracking-tight text-foreground md:text-3xl md:leading-10">
           {title}
         </h1>
